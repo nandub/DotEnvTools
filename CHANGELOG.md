@@ -13,6 +13,8 @@ This project follows a pragmatic versioning approach:
 
 ## [0.7.1] - 2026-04-25
 
+Internal version commit: `08969dd` (`fc9fd0d` introduced the behavior fixes).
+
 ### Fixed
 
 - Prevented `Remove-DotEnvVariable` and `RemoveOnExit` cleanup from removing pre-existing variables that were skipped by default no-clobber imports.
@@ -28,6 +30,8 @@ This project follows a pragmatic versioning approach:
 
 ## [0.7.0] - 2026-04-25
 
+Internal version commit: `f3119bd`.
+
 ### Added
 
 - Added opt-in variable expansion using `${NAME}` syntax.
@@ -40,6 +44,8 @@ This project follows a pragmatic versioning approach:
 - Missing references are preserved unchanged.
 
 ## [0.6.0] - 2026-04-25
+
+Internal version commit: `647435b`.
 
 ### Added
 
@@ -64,6 +70,8 @@ This project follows a pragmatic versioning approach:
 
 ## [0.5.2] - 2026-04-25
 
+Internal version commit: `9efd6a3`.
+
 ### Added
 
 - Added stable Pester coverage for parsing, import/remove lifecycle, and auto-load regression behavior.
@@ -84,12 +92,16 @@ This project follows a pragmatic versioning approach:
 
 ## [0.5.1] - 2026-04-25
 
+Internal version commit: `9efd6a3` (retrospective changelog entry first appeared in `647435b`).
+
 ### Fixed
 
 - Reloaded `.env` files when variables are missing even if the file hash is unchanged.
 - Improved tracking of loaded variables per file.
 
 ## [0.5.0] - 2026-04-25
+
+Internal version commit: `9efd6a3` (retrospective changelog entry first appeared in `647435b`).
 
 ### Added
 
