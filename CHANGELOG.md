@@ -12,6 +12,16 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [0.8.2] - 2026-04-25
+
+Internal version commit: pending.
+
+### Documentation
+
+- Added a README quick-start section for common import, command, read-only, validation, and auto-load workflows.
+- Documented help authoring practice and comment-based help as the current source of truth.
+- Removed the empty placeholder external MAML help file.
+
 ## [0.8.1] - 2026-04-25
 
 Internal version commit: `9eef89d`.

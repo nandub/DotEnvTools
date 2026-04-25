@@ -39,6 +39,39 @@ From the repository root:
 Import-Module .\Source\DotEnvTools.psd1 -Force
 ```
 
+## Quick Start
+
+Load a project `.env` without overwriting existing process variables:
+
+```powershell
+Import-DotEnvFile -Path .\.env
+```
+
+Run a command with dotenv values applied only for that command:
+
+```powershell
+Invoke-DotEnvCommand -Path .\.env -Command npm -ArgumentList @('test') -Override
+```
+
+Read values without changing `Env:`:
+
+```powershell
+Read-DotEnvMap -Path .\.env
+Get-DotEnvValue -Path .\.env -Name API_URL
+```
+
+Validate a file before importing it:
+
+```powershell
+Test-DotEnvFile -Path .\.env -ExamplePath .\.env.example
+```
+
+Auto-load trusted project directories:
+
+```powershell
+Enable-DotEnvAutoLoad -TrustedPath C:\Projects -IncludeVariants -EnvironmentName development
+```
+
 ## Basic Usage
 
 Create a `.env` file:
@@ -393,14 +426,14 @@ By default this checks for `.env`, `.env.*`, and `.env.keys`.
 ## Build Deployable Package
 
 ```powershell
-.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.1 -Verbose
+.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.2 -Verbose
 ```
 
 This creates:
 
 ```text
-dist\DotEnvTools\0.8.1\
-dist\DotEnvTools-0.8.1.zip
+dist\DotEnvTools\0.8.2\
+dist\DotEnvTools-0.8.2.zip
 ```
 
 ## Run Quality Checks
@@ -495,6 +528,12 @@ Source\DotEnvTools.psm1   = implementation
 Do not use `Export-ModuleMember` in the `.psm1`.
 
 Update `FunctionsToExport` in the manifest when adding or removing public commands.
+
+## Help Authoring
+
+DotEnvTools currently uses comment-based help in `Source\DotEnvTools.psm1` as the source of truth for command help. This keeps help close to the implementation while the public API is still moving.
+
+If external MAML help is needed later, generate it from Markdown using a tool such as PlatyPS, commit the generated `Source\en-US\DotEnvTools-help.xml`, and keep the Markdown source reviewed alongside code changes. Do not maintain generated MAML by hand.
 
 ## License
 
