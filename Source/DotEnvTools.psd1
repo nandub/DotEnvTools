@@ -1,6 +1,6 @@
 ﻿@{
     RootModule = 'DotEnvTools.psm1'
-    ModuleVersion = '0.7.1'
+    ModuleVersion = '0.8.0'
     GUID = '4d69b4ea-9d83-4e24-8d6f-6b74c3a6d052'
     Author = 'DotEnvTools Contributors'
     CompanyName = 'Community'
@@ -13,13 +13,20 @@
         'Disable-DotEnvAutoLoad',
         'Enable-DotEnvAutoLoad',
         'Export-DotEnvFile',
+        'Find-DotEnvFile',
         'Get-DotEnvAutoLoadState',
         'Get-DotEnvFilePath',
+        'Get-DotEnvValue',
         'Import-DotEnvFile',
+        'Invoke-DotEnvCommand',
         'Invoke-DotEnvAutoLoadNow',
+        'Read-DotEnvMap',
         'Read-DotEnvFile',
         'Remove-DotEnvAutoLoadProfile',
+        'Remove-DotEnvValue',
         'Remove-DotEnvVariable',
+        'Set-DotEnvValue',
+        'Test-DotEnvGitIgnore',
         'Test-DotEnvFile'
     )
     CmdletsToExport = @()
@@ -30,7 +37,7 @@
             Tags = @('dotenv', 'env', 'PowerShell', 'WindowsPowerShell')
             LicenseUri = ''
             ProjectUri = ''
-            ReleaseNotes = '0.7.1 hardens no-clobber cleanup, strict validation reporting, quoted export round-trips, and documentation.'
+            ReleaseNotes = '0.8.0 adds command invocation, parse-only value APIs, dotenv file editing, search-up discovery, schema checks, gitignore hygiene, and parser compatibility improvements.'
         }
     }
 }

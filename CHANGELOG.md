@@ -7,9 +7,27 @@ This project follows a pragmatic versioning approach:
 - 0.5.x: stabilization and core functionality
 - 0.6.x: feature expansion with layered dotenv loading
 - 0.7.x: variable expansion and behavior hardening
+- 0.8.x: workflow helpers and parser compatibility
 - 1.0.0: production-ready public release
 
 ---
+
+## [0.8.0] - 2026-04-25
+
+Internal version commit: pending.
+
+### Added
+
+- Added `Invoke-DotEnvCommand` to run commands with dotenv values applied temporarily.
+- Added parse-only value APIs: `Read-DotEnvMap` and `Get-DotEnvValue`.
+- Added dotenv file editing commands: `Set-DotEnvValue` and `Remove-DotEnvValue`.
+- Added `Find-DotEnvFile` and `-SearchUp` support for parent-directory discovery.
+- Added `Test-DotEnvGitIgnore` for simple dotenv secret hygiene checks.
+- Added stricter validation options through `Test-DotEnvFile -Required` and `-RequireNoExtraKeys`.
+
+### Changed
+
+- Expanded parser compatibility for `export KEY=value`, safe inline comments, unbraced `$VAR` expansion, common double-quote escapes, and quoted multiline values.
 
 ## [0.7.1] - 2026-04-25
 

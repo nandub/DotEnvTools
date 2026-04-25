@@ -13,8 +13,13 @@ It is designed for safe local development workflows where project-specific envir
 - Mask imported values in output by default
 - Validate `.env` syntax and optional `.env.example` coverage
 - Export process environment variables to `.env` format
+- Read values without mutating the process environment
+- Add, update, and remove keys in dotenv files
+- Run commands with temporary dotenv values
 - Auto-load `.env` files when entering trusted directories
 - Optionally remove auto-loaded variables when leaving a project directory
+- Search parent directories for dotenv files
+- Check `.gitignore` hygiene for dotenv secret files
 - Reload unchanged `.env` files when tracked variables are missing
 - Layered dotenv loading:
   - `.env`
@@ -105,7 +110,7 @@ Import-DotEnvFile -Path .\.env -PassThru -RevealValues
 
 ## Variable Expansion
 
-Variable expansion is opt-in. DotEnvTools expands `${NAME}` references from values already seen in the dotenv load order, then from the current process environment. Missing references are preserved as written.
+Variable expansion is opt-in. DotEnvTools expands `${NAME}` and `$NAME` references from values already seen in the dotenv load order, then from the current process environment. Missing references are preserved as written.
 
 Example `.env`:
 
@@ -113,6 +118,7 @@ Example `.env`:
 HOST=localhost
 PORT=8080
 API_URL=http://${HOST}:${PORT}
+ALT_URL=http://$HOST:$PORT
 LITERAL_VALUE=${MISSING_VALUE}
 ```
 
@@ -201,6 +207,69 @@ Get-DotEnvFilePath -Path . -IncludeVariants -EnvironmentName development
 
 Only existing files are returned.
 
+Search parent directories:
+
+```powershell
+Find-DotEnvFile -Path . -IncludeVariants -EnvironmentName development
+Get-DotEnvFilePath -Path . -SearchUp
+```
+
+When `-SearchUp` is used, parent directories are returned before child directories so child/project values can override parent values when `-Override` is used.
+
+## Read Values Without Importing
+
+Read all values as an object:
+
+```powershell
+Read-DotEnvMap -Path .\.env
+```
+
+Read values as an ordered hashtable:
+
+```powershell
+Read-DotEnvMap -Path . -IncludeVariants -EnvironmentName development -AsHashtable
+```
+
+Read one value:
+
+```powershell
+Get-DotEnvValue -Path .\.env -Name API_URL
+```
+
+These commands do not modify `Env:`.
+
+## Edit Dotenv Files
+
+Add or update a key:
+
+```powershell
+Set-DotEnvValue -Path .\.env -Name API_URL -Value https://localhost:8443
+```
+
+Create a missing file while setting a key:
+
+```powershell
+Set-DotEnvValue -Path .\.env -Name API_URL -Value https://localhost:8443 -Force
+```
+
+Remove a key:
+
+```powershell
+Remove-DotEnvValue -Path .\.env -Name API_URL
+```
+
+Unrelated comments and keys are preserved.
+
+## Run Commands
+
+Run a command with dotenv values applied temporarily:
+
+```powershell
+Invoke-DotEnvCommand -Path .\.env -Command npm -ArgumentList @('test') -Override
+```
+
+DotEnvTools restores previous process environment values after the command returns.
+
 ## Validation
 
 Validate `.env` syntax:
@@ -213,6 +282,16 @@ Validate syntax and check that keys from `.env.example` exist in `.env`:
 
 ```powershell
 Test-DotEnvFile -Path .\.env -ExamplePath .\.env.example
+```
+
+Require specific keys and warn on keys that are not present in the example file:
+
+```powershell
+Test-DotEnvFile `
+    -Path .\.env `
+    -ExamplePath .\.env.example `
+    -Required API_URL,DB_NAME `
+    -RequireNoExtraKeys
 ```
 
 Malformed lines are reported in the returned `Errors` collection and set `IsValid` to `False`.
@@ -297,19 +376,31 @@ Remove-DotEnvAutoLoadProfile
 Import-DotEnvFile -Path .\.env -WhatIf
 Remove-DotEnvVariable -Path .\.env -WhatIf
 Enable-DotEnvAutoLoad -TrustedPath C:\Projects -WhatIf
+Set-DotEnvValue -Path .\.env -Name API_URL -Value https://localhost -WhatIf
+Remove-DotEnvValue -Path .\.env -Name API_URL -WhatIf
 ```
+
+## Gitignore Hygiene
+
+Check whether common dotenv secret files are ignored:
+
+```powershell
+Test-DotEnvGitIgnore -Path .
+```
+
+By default this checks for `.env`, `.env.*`, and `.env.keys`.
 
 ## Build Deployable Package
 
 ```powershell
-.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.7.1 -Verbose
+.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.0 -Verbose
 ```
 
 This creates:
 
 ```text
-dist\DotEnvTools\0.7.1\
-dist\DotEnvTools-0.7.1.zip
+dist\DotEnvTools\0.8.0\
+dist\DotEnvTools-0.8.0.zip
 ```
 
 ## Run Quality Checks
@@ -375,13 +466,20 @@ ConvertFrom-DotEnv
 Disable-DotEnvAutoLoad
 Enable-DotEnvAutoLoad
 Export-DotEnvFile
+Find-DotEnvFile
 Get-DotEnvAutoLoadState
 Get-DotEnvFilePath
+Get-DotEnvValue
 Import-DotEnvFile
+Invoke-DotEnvCommand
 Invoke-DotEnvAutoLoadNow
+Read-DotEnvMap
 Read-DotEnvFile
 Remove-DotEnvAutoLoadProfile
+Remove-DotEnvValue
 Remove-DotEnvVariable
+Set-DotEnvValue
+Test-DotEnvGitIgnore
 Test-DotEnvFile
 ```
 

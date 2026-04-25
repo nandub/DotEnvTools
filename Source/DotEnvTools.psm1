@@ -75,7 +75,7 @@ This function does not execute commands.
     }
 
     $resolved = [string]$Value
-    $pattern = '\$\{([A-Za-z_][A-Za-z0-9_]*)\}'
+    $pattern = '\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)'
 
     for ($depth = 0; $depth -lt $MaxDepth; $depth++) {
         $regexMatches = [regex]::Matches($resolved, $pattern)
@@ -92,6 +92,9 @@ This function does not execute commands.
             [void]$builder.Append($resolved.Substring($lastIndex, $match.Index - $lastIndex))
 
             $name = $match.Groups[1].Value
+            if ([string]::IsNullOrEmpty($name)) {
+                $name = $match.Groups[2].Value
+            }
             $replacement = $null
             $found = $false
 
@@ -191,7 +194,10 @@ Windows PowerShell 5.1 compatible.
         [switch]$IncludeVariants,
 
         [Parameter(Mandatory = $false)]
-        [string]$EnvironmentName
+        [string]$EnvironmentName,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$SearchUp
     )
 
     begin {}
@@ -213,6 +219,24 @@ Windows PowerShell 5.1 compatible.
                 return
             }
 
+            $searchRoots = New-Object System.Collections.ArrayList
+            if ($SearchUp) {
+                $currentDirectory = [System.IO.DirectoryInfo]$resolvedPath
+                $stack = New-Object System.Collections.Stack
+
+                while ($null -ne $currentDirectory) {
+                    $stack.Push($currentDirectory.FullName)
+                    $currentDirectory = $currentDirectory.Parent
+                }
+
+                while ($stack.Count -gt 0) {
+                    [void]$searchRoots.Add($stack.Pop())
+                }
+            }
+            else {
+                [void]$searchRoots.Add($resolvedPath)
+            }
+
             $candidateNames = New-Object System.Collections.ArrayList
             [void]$candidateNames.Add('.env')
 
@@ -225,12 +249,14 @@ Windows PowerShell 5.1 compatible.
                 }
             }
 
-            foreach ($candidateName in $candidateNames) {
-                $candidatePath = Join-Path $resolvedPath $candidateName
+            foreach ($root in $searchRoots) {
+                foreach ($candidateName in $candidateNames) {
+                    $candidatePath = Join-Path $root $candidateName
 
-                if (Test-Path -LiteralPath $candidatePath -PathType Leaf) {
-                    if ($PSCmdlet.ShouldProcess($candidatePath, 'Return .env file path')) {
-                        $candidatePath
+                    if (Test-Path -LiteralPath $candidatePath -PathType Leaf) {
+                        if ($PSCmdlet.ShouldProcess($candidatePath, 'Return .env file path')) {
+                            $candidatePath
+                        }
                     }
                 }
             }
@@ -393,7 +419,35 @@ Windows PowerShell 5.1 compatible.
 
             $result = [ordered]@{}
 
-            $lines = $rawContent -split "`r?`n"
+            $physicalLines = $rawContent -split "`r?`n"
+            $lines = New-Object System.Collections.ArrayList
+
+            for ($index = 0; $index -lt $physicalLines.Count; $index++) {
+                $logicalLine = [string]$physicalLines[$index]
+                $trimmedLogicalLine = $logicalLine.Trim()
+
+                if ($trimmedLogicalLine -match '^[A-Za-z_][A-Za-z0-9_]*\s*=\s*["'']' -or $trimmedLogicalLine -match '^export\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*["'']') {
+                    $separatorIndex = $logicalLine.IndexOf('=')
+                    $valueStart = $logicalLine.Substring($separatorIndex + 1).TrimStart()
+
+                    if ($valueStart.Length -gt 0) {
+                        $quote = $valueStart.Substring(0, 1)
+
+                        while (
+                            $index -lt ($physicalLines.Count - 1) -and
+                            -not (
+                                $logicalLine.TrimEnd().EndsWith($quote) -and
+                                ($quote -ne '"' -or -not $logicalLine.TrimEnd().EndsWith('\"'))
+                            )
+                        ) {
+                            $index++
+                            $logicalLine = $logicalLine + [Environment]::NewLine + [string]$physicalLines[$index]
+                        }
+                    }
+                }
+
+                [void]$lines.Add($logicalLine)
+            }
 
             foreach ($line in $lines) {
                 $trimmed = $line.Trim()
@@ -404,6 +458,10 @@ Windows PowerShell 5.1 compatible.
 
                 if ($trimmed.StartsWith('#')) {
                     continue
+                }
+
+                if ($trimmed.StartsWith('export ')) {
+                    $trimmed = $trimmed.Substring(7).TrimStart()
                 }
 
                 if ($trimmed -notmatch '=') {
@@ -425,6 +483,14 @@ Windows PowerShell 5.1 compatible.
                     continue
                 }
 
+                if ($name -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') {
+                    if ($Strict) {
+                        Write-Error -Message ("Invalid .env line. Invalid variable name: {0}" -f $line) -Category InvalidData
+                    }
+
+                    continue
+                }
+
                 $value = ''
 
                 if ($pair.Count -ge 2) {
@@ -439,19 +505,29 @@ Windows PowerShell 5.1 compatible.
                 }
 
                 $value = $value.Trim()
+                $wasQuoted = $false
 
                 if ($value.Length -ge 2) {
                     if (
                         ($value.StartsWith('"') -and $value.EndsWith('"')) -or
                         ($value.StartsWith("'") -and $value.EndsWith("'"))
                     ) {
+                        $wasQuoted = $true
                         $wasDoubleQuoted = $value.StartsWith('"')
                         $value = $value.Substring(1, $value.Length - 2)
 
                         if ($wasDoubleQuoted) {
+                            $value = $value -replace '\\n', "`n"
+                            $value = $value -replace '\\t', "`t"
                             $value = $value -replace '\\"', '"'
+                            $value = $value -replace '\\\\', '\'
                         }
                     }
+                }
+
+                if (-not $wasQuoted) {
+                    $value = $value -replace '\s+#.*$', ''
+                    $value = $value.TrimEnd()
                 }
 
                 if ($null -eq $value) {
@@ -553,6 +629,319 @@ Windows PowerShell 5.1 compatible.
     end {}
 }
 
+function Read-DotEnvMap {
+<#
+.SYNOPSIS
+Reads dotenv files into a map without modifying the process environment.
+.DESCRIPTION
+Resolves one or more dotenv files and returns a PSCustomObject by default, or an
+ordered hashtable when -AsHashtable is used.
+.PARAMETER Path
+Path to a .env file or directory.
+.PARAMETER IncludeVariants
+Includes supported variant files.
+.PARAMETER EnvironmentName
+Optional environment suffix used with variant files.
+.PARAMETER SearchUp
+Searches parent directories for dotenv files, loading parents before children.
+.PARAMETER Strict
+Enables strict parsing.
+.PARAMETER ExpandVariables
+Expands variable references using values already read, then process variables.
+.PARAMETER AsHashtable
+Returns an ordered hashtable instead of a PSCustomObject.
+.EXAMPLE
+Read-DotEnvMap -Path .\.env
+.EXAMPLE
+Read-DotEnvMap -Path . -IncludeVariants -EnvironmentName development -AsHashtable
+.NOTES
+Windows PowerShell 5.1 compatible.
+#>
+    [CmdletBinding()]
+    [OutputType([pscustomobject], [System.Collections.Specialized.OrderedDictionary])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path,
+
+        [Parameter()]
+        [switch]$IncludeVariants,
+
+        [Parameter()]
+        [string]$EnvironmentName,
+
+        [Parameter()]
+        [switch]$SearchUp,
+
+        [Parameter()]
+        [switch]$Strict,
+
+        [Parameter()]
+        [switch]$ExpandVariables,
+
+        [Parameter()]
+        [switch]$AsHashtable
+    )
+
+    process {
+        try {
+            $map = [ordered]@{}
+            $files = @(
+                Get-DotEnvFilePath `
+                    -Path $Path `
+                    -IncludeVariants:$IncludeVariants `
+                    -EnvironmentName $EnvironmentName `
+                    -SearchUp:$SearchUp
+            )
+
+            foreach ($file in $files) {
+                foreach ($entry in Read-DotEnvFile -Path $file -Strict:$Strict) {
+                    if ($null -eq $entry) {
+                        continue
+                    }
+
+                    $value = if ($null -eq $entry.Value) { '' } else { [string]$entry.Value }
+
+                    if ($ExpandVariables) {
+                        $value = Resolve-DotEnvValue -Value $value -ValueMap $map
+                    }
+
+                    $map[$entry.Name] = $value
+                }
+            }
+
+            if ($AsHashtable) {
+                return $map
+            }
+
+            [pscustomobject]$map
+        }
+        catch {
+            Write-Error -Message ("Failed to read dotenv map from path '{0}'. {1}" -f $Path, $_.Exception.Message) -Category ReadError
+        }
+    }
+}
+
+function Get-DotEnvValue {
+<#
+.SYNOPSIS
+Gets one dotenv value without modifying the process environment.
+.EXAMPLE
+Get-DotEnvValue -Path .\.env -Name API_URL
+.NOTES
+Windows PowerShell 5.1 compatible.
+#>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path,
+
+        [Parameter(Mandatory = $true)]
+        [ValidatePattern('^[A-Za-z_][A-Za-z0-9_]*$')]
+        [string]$Name,
+
+        [Parameter()]
+        [switch]$IncludeVariants,
+
+        [Parameter()]
+        [string]$EnvironmentName,
+
+        [Parameter()]
+        [switch]$SearchUp,
+
+        [Parameter()]
+        [switch]$Strict,
+
+        [Parameter()]
+        [switch]$ExpandVariables
+    )
+
+    process {
+        $map = Read-DotEnvMap `
+            -Path $Path `
+            -IncludeVariants:$IncludeVariants `
+            -EnvironmentName $EnvironmentName `
+            -SearchUp:$SearchUp `
+            -Strict:$Strict `
+            -ExpandVariables:$ExpandVariables `
+            -AsHashtable
+
+        if ($map.Contains($Name)) {
+            [string]$map[$Name]
+        }
+    }
+}
+
+function Find-DotEnvFile {
+<#
+.SYNOPSIS
+Finds dotenv files in the current or parent directories.
+.EXAMPLE
+Find-DotEnvFile -Path . -IncludeVariants -EnvironmentName development
+.NOTES
+Windows PowerShell 5.1 compatible.
+#>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path = '.',
+
+        [Parameter()]
+        [switch]$IncludeVariants,
+
+        [Parameter()]
+        [string]$EnvironmentName
+    )
+
+    process {
+        Get-DotEnvFilePath -Path $Path -IncludeVariants:$IncludeVariants -EnvironmentName $EnvironmentName -SearchUp
+    }
+}
+
+function Format-DotEnvValue {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [AllowNull()]
+        [string]$Value
+    )
+
+    if ($null -eq $Value) {
+        $Value = ''
+    }
+
+    $escaped = [string]$Value
+    if ($escaped -match '\s|#|=|"') {
+        $escaped = $escaped -replace '\\', '\\'
+        $escaped = $escaped -replace '"', '\"'
+        return '"' + $escaped + '"'
+    }
+
+    $escaped
+}
+
+function Set-DotEnvValue {
+<#
+.SYNOPSIS
+Adds or updates a key in a dotenv file.
+.EXAMPLE
+Set-DotEnvValue -Path .\.env -Name API_URL -Value https://localhost:8443
+.NOTES
+Windows PowerShell 5.1 compatible.
+#>
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([System.IO.FileInfo])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path,
+
+        [Parameter(Mandatory = $true)]
+        [ValidatePattern('^[A-Za-z_][A-Za-z0-9_]*$')]
+        [string]$Name,
+
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string]$Value,
+
+        [Parameter()]
+        [switch]$Force
+    )
+
+    process {
+        try {
+            $targetPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+            if (-not (Test-Path -LiteralPath $targetPath -PathType Leaf)) {
+                if (-not $Force) {
+                    Write-Error -Message ("File not found: {0}. Use -Force to create it." -f $targetPath) -Category ObjectNotFound
+                    return
+                }
+
+                $parent = Split-Path -Parent $targetPath
+                if ($parent -and -not (Test-Path -LiteralPath $parent)) {
+                    New-Item -Path $parent -ItemType Directory -Force | Out-Null
+                }
+            }
+
+            $lines = @()
+            if (Test-Path -LiteralPath $targetPath -PathType Leaf) {
+                $lines = @(Get-Content -LiteralPath $targetPath -ErrorAction Stop)
+            }
+
+            $updated = $false
+            $formatted = '{0}={1}' -f $Name, (Format-DotEnvValue -Value $Value)
+            $newLines = foreach ($line in $lines) {
+                if (-not $updated -and $line -match ('^\s*(?:export\s+)?{0}\s*=' -f [regex]::Escape($Name))) {
+                    $updated = $true
+                    $formatted
+                }
+                else {
+                    $line
+                }
+            }
+
+            if (-not $updated) {
+                $newLines = @($newLines) + $formatted
+            }
+
+            if ($PSCmdlet.ShouldProcess($targetPath, ("Set dotenv value {0}" -f $Name))) {
+                Set-Content -LiteralPath $targetPath -Value $newLines -Encoding UTF8
+                Get-Item -LiteralPath $targetPath
+            }
+        }
+        catch {
+            Write-Error -Message ("Failed to set dotenv value '{0}'. {1}" -f $Name, $_.Exception.Message) -Category WriteError
+        }
+    }
+}
+
+function Remove-DotEnvValue {
+<#
+.SYNOPSIS
+Removes a key from a dotenv file.
+.EXAMPLE
+Remove-DotEnvValue -Path .\.env -Name API_URL
+.NOTES
+Windows PowerShell 5.1 compatible.
+#>
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([System.IO.FileInfo])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path,
+
+        [Parameter(Mandatory = $true)]
+        [ValidatePattern('^[A-Za-z_][A-Za-z0-9_]*$')]
+        [string]$Name
+    )
+
+    process {
+        try {
+            $targetPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+            if (-not (Test-Path -LiteralPath $targetPath -PathType Leaf)) {
+                Write-Error -Message ("File not found: {0}" -f $targetPath) -Category ObjectNotFound
+                return
+            }
+
+            $lines = @(Get-Content -LiteralPath $targetPath -ErrorAction Stop)
+            $newLines = @($lines | Where-Object { $_ -notmatch ('^\s*(?:export\s+)?{0}\s*=' -f [regex]::Escape($Name)) })
+
+            if ($PSCmdlet.ShouldProcess($targetPath, ("Remove dotenv value {0}" -f $Name))) {
+                Set-Content -LiteralPath $targetPath -Value $newLines -Encoding UTF8
+                Get-Item -LiteralPath $targetPath
+            }
+        }
+        catch {
+            Write-Error -Message ("Failed to remove dotenv value '{0}'. {1}" -f $Name, $_.Exception.Message) -Category WriteError
+        }
+    }
+}
+
 function Import-DotEnvFile {
 <#
 .SYNOPSIS
@@ -650,6 +1039,9 @@ Variable expansion is text-only and does not execute commands.
         [string]$EnvironmentName,
 
         [Parameter(Mandatory = $false)]
+        [switch]$SearchUp,
+
+        [Parameter(Mandatory = $false)]
         [switch]$Strict,
 
         [Parameter(Mandatory = $false)]
@@ -681,7 +1073,8 @@ Variable expansion is text-only and does not execute commands.
                 Get-DotEnvFilePath `
                     -Path $Path `
                     -IncludeVariants:$IncludeVariants `
-                    -EnvironmentName $EnvironmentName
+                    -EnvironmentName $EnvironmentName `
+                    -SearchUp:$SearchUp
             )
 
             foreach ($file in $files) {
@@ -784,6 +1177,143 @@ Variable expansion is text-only and does not execute commands.
     end {}
 }
 
+function Invoke-DotEnvCommand {
+<#
+.SYNOPSIS
+Runs a command with dotenv variables applied temporarily.
+.DESCRIPTION
+Loads dotenv values into the current process, invokes a command, then restores the
+previous process environment values. This is intended for child process workflows
+where dotenv values should not remain in the interactive session.
+.PARAMETER Path
+Path to a .env file or directory.
+.PARAMETER Command
+Command to invoke.
+.PARAMETER ArgumentList
+Arguments passed to the command.
+.EXAMPLE
+Invoke-DotEnvCommand -Path .\.env -Command npm -ArgumentList @('test')
+.NOTES
+Windows PowerShell 5.1 compatible.
+#>
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Command,
+
+        [Parameter()]
+        [string[]]$ArgumentList = @(),
+
+        [Parameter()]
+        [switch]$Override,
+
+        [Parameter()]
+        [switch]$NoClobber,
+
+        [Parameter()]
+        [switch]$IncludeVariants,
+
+        [Parameter()]
+        [string]$EnvironmentName,
+
+        [Parameter()]
+        [switch]$SearchUp,
+
+        [Parameter()]
+        [switch]$Strict,
+
+        [Parameter()]
+        [switch]$ExpandVariables,
+
+        [Parameter()]
+        [switch]$PassThru
+    )
+
+    process {
+        if ($Override -and $NoClobber) {
+            Write-Error -Message 'Specify either -Override or -NoClobber, not both.' -Category InvalidArgument
+            return
+        }
+
+        if (-not $Override -and -not $NoClobber) {
+            $NoClobber = $true
+        }
+
+        $previousValues = @{}
+        $loadedNames = New-Object System.Collections.ArrayList
+
+        try {
+            $map = Read-DotEnvMap `
+                -Path $Path `
+                -IncludeVariants:$IncludeVariants `
+                -EnvironmentName $EnvironmentName `
+                -SearchUp:$SearchUp `
+                -Strict:$Strict `
+                -ExpandVariables:$ExpandVariables `
+                -AsHashtable
+
+            foreach ($name in $map.Keys) {
+                $envPath = "Env:\{0}" -f $name
+                $hadPreviousValue = Test-Path -Path $envPath
+                $previousValue = $null
+
+                if ($hadPreviousValue) {
+                    $previousItem = Get-Item -Path $envPath -ErrorAction SilentlyContinue
+                    if ($null -ne $previousItem) {
+                        $previousValue = $previousItem.Value
+                    }
+                }
+
+                $previousValues[$name] = @{
+                    HadPreviousValue = $hadPreviousValue
+                    Value = $previousValue
+                }
+
+                if ($hadPreviousValue -and $NoClobber -and -not $Override) {
+                    continue
+                }
+
+                Set-Item -Path $envPath -Value ([string]$map[$name]) -ErrorAction Stop
+                [void]$loadedNames.Add($name)
+            }
+
+            & $Command @ArgumentList
+            $exitCode = if ($null -ne $global:LASTEXITCODE) { [int]$global:LASTEXITCODE } else { 0 }
+
+            if ($PassThru) {
+                [pscustomobject]@{
+                    Command = $Command
+                    ArgumentList = @($ArgumentList)
+                    ExitCode = $exitCode
+                    LoadedVariables = @($loadedNames)
+                }
+            }
+        }
+        catch {
+            Write-Error -Message ("Failed to invoke command with dotenv values. {0}" -f $_.Exception.Message) -Category InvalidOperation
+        }
+        finally {
+            foreach ($name in $previousValues.Keys) {
+                $envPath = "Env:\{0}" -f $name
+                $state = $previousValues[$name]
+
+                if ($state.HadPreviousValue) {
+                    Set-Item -Path $envPath -Value ([string]$state.Value) -ErrorAction SilentlyContinue
+                }
+                else {
+                    Remove-Item -Path $envPath -ErrorAction SilentlyContinue
+                }
+            }
+        }
+    }
+}
+
 function Remove-DotEnvVariable {
 <#
 .SYNOPSIS
@@ -840,6 +1370,9 @@ Windows PowerShell 5.1 compatible.
         [string]$EnvironmentName,
 
         [Parameter(Mandatory = $false)]
+        [switch]$SearchUp,
+
+        [Parameter(Mandatory = $false)]
         [switch]$Strict,
 
         [Parameter(Mandatory = $false)]
@@ -854,7 +1387,8 @@ Windows PowerShell 5.1 compatible.
                 Get-DotEnvFilePath `
                     -Path $Path `
                     -IncludeVariants:$IncludeVariants `
-                    -EnvironmentName $EnvironmentName
+                    -EnvironmentName $EnvironmentName `
+                    -SearchUp:$SearchUp
             )
 
             foreach ($file in $files) {
@@ -958,7 +1492,13 @@ Windows PowerShell 5.1 compatible.
         [string]$Path,
 
         [Parameter()]
-        [string]$ExamplePath
+        [string]$ExamplePath,
+
+        [Parameter()]
+        [string[]]$Required,
+
+        [Parameter()]
+        [switch]$RequireNoExtraKeys
     )
 
     process {
@@ -983,10 +1523,28 @@ Windows PowerShell 5.1 compatible.
                         [void]$errors.Add($exampleStrictError.Exception.Message)
                     }
 
-                    foreach ($exampleName in @($exampleRecords | Select-Object -ExpandProperty Name -Unique)) {
+                    $exampleKeys = @($exampleRecords | Select-Object -ExpandProperty Name -Unique)
+                    foreach ($exampleName in $exampleKeys) {
                         if ($keys -notcontains $exampleName) {
                             [void]$warnings.Add("Missing key from example: $exampleName")
                         }
+                    }
+
+                    if ($RequireNoExtraKeys) {
+                        foreach ($key in $keys) {
+                            if ($exampleKeys -notcontains $key) {
+                                [void]$warnings.Add("Extra key not present in example: $key")
+                            }
+                        }
+                    }
+                }
+
+                foreach ($requiredName in @($Required)) {
+                    if ($requiredName -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') {
+                        [void]$errors.Add("Invalid required key name: $requiredName")
+                    }
+                    elseif ($keys -notcontains $requiredName) {
+                        [void]$warnings.Add("Missing required key: $requiredName")
                     }
                 }
             }
@@ -1004,6 +1562,58 @@ Windows PowerShell 5.1 compatible.
             WarningCount = @($warnings).Count
             Errors = @($errors)
             Warnings = @($warnings)
+        }
+    }
+}
+
+function Test-DotEnvGitIgnore {
+<#
+.SYNOPSIS
+Checks whether common dotenv secret files are ignored by git.
+.DESCRIPTION
+Reads a repository .gitignore file and reports whether common dotenv patterns are present.
+.PARAMETER Path
+Repository path. Defaults to current directory.
+.PARAMETER Patterns
+Patterns to require. Defaults to .env, .env.*, and .env.keys.
+.EXAMPLE
+Test-DotEnvGitIgnore -Path .
+.NOTES
+Windows PowerShell 5.1 compatible.
+#>
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter()]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path = '.',
+
+        [Parameter()]
+        [string[]]$Patterns = @('.env', '.env.*', '.env.keys')
+    )
+
+    process {
+        try {
+            $root = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+            $gitIgnorePath = Join-Path $root '.gitignore'
+            $lines = @()
+
+            if (Test-Path -LiteralPath $gitIgnorePath -PathType Leaf) {
+                $lines = @(Get-Content -LiteralPath $gitIgnorePath -ErrorAction Stop | ForEach-Object { $_.Trim() })
+            }
+
+            $missing = @($Patterns | Where-Object { $lines -notcontains $_ })
+
+            [pscustomobject]@{
+                Path = $gitIgnorePath
+                Exists = Test-Path -LiteralPath $gitIgnorePath -PathType Leaf
+                IsProtected = (@($missing).Count -eq 0)
+                RequiredPatterns = @($Patterns)
+                MissingPatterns = @($missing)
+            }
+        }
+        catch {
+            Write-Error -Message ("Failed to test dotenv gitignore hygiene. {0}" -f $_.Exception.Message) -Category InvalidOperation
         }
     }
 }
@@ -1063,11 +1673,7 @@ Windows PowerShell 5.1 compatible.
 
             $lines = foreach ($item in $items) {
                 if ($null -ne $item) {
-                    $escaped = [string]$item.Value
-                    if ($escaped -match '\s|#|=') {
-                        $escaped = '"' + ($escaped -replace '"', '\"') + '"'
-                    }
-                    '{0}={1}' -f $item.Name, $escaped
+                    '{0}={1}' -f $item.Name, (Format-DotEnvValue -Value ([string]$item.Value))
                 }
             }
 

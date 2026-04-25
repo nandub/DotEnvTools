@@ -13,16 +13,20 @@ DotEnvTools is intentionally conservative:
 Supported:
 
 - `KEY=value`
+- `export KEY=value`
 - `KEY="quoted value"`
 - `KEY='literal value'`
 - escaped double quotes inside double-quoted values
+- common double-quoted escapes such as `\n`, `\t`, and `\\`
+- quoted multiline values
 - empty values
 - full-line comments
 - safe inline comments for unquoted values
 - opt-in `${NAME}` variable expansion during import
+- opt-in `$NAME` variable expansion during import
 
 Not supported in this pass:
 
-- multiline values
 - command substitution
 - implicit variable expansion
+- encryption or secret synchronization

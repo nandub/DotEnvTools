@@ -76,6 +76,21 @@ EMPTY_VALUE=
         $result.QUOTED_VALUE | Should -Be 'hello "world" there'
     }
 
+    It 'Parses export prefixes, inline comments, escapes, and multiline quoted values' {
+        $content = @'
+export API_URL=https://localhost # local endpoint
+QUOTED_VALUE="hello\tworld"
+MULTILINE_VALUE="first
+second"
+'@
+
+        $result = ConvertFrom-DotEnv -Content $content
+
+        $result.API_URL | Should -Be 'https://localhost'
+        $result.QUOTED_VALUE | Should -Be "hello`tworld"
+        $result.MULTILINE_VALUE | Should -Be ("first{0}second" -f [Environment]::NewLine)
+    }
+
     It 'Reads EMPTY_VALUE as an empty string record' {
         $record = Read-DotEnvFile -Path $script:EnvPath |
             Where-Object { $_.Name -eq 'EMPTY_VALUE' }
@@ -124,6 +139,25 @@ EMPTY_VALUE=
         ($result.Errors -join "`n") | Should -Match "Missing '=' delimiter"
     }
 
+    It 'Reports missing required and extra example keys' {
+        $examplePath = Join-Path $script:TestRoot '.env.example'
+        Set-Content -Path $examplePath -Value @(
+            'API_URL='
+            'REQUIRED_ONLY='
+        ) -Encoding UTF8
+
+        $result = Test-DotEnvFile `
+            -Path $script:EnvPath `
+            -ExamplePath $examplePath `
+            -Required API_URL,REQUIRED_ONLY `
+            -RequireNoExtraKeys
+
+        $result.IsValid | Should -BeTrue
+        $result.WarningCount | Should -BeGreaterThan 0
+        ($result.Warnings -join "`n") | Should -Match 'Missing required key: REQUIRED_ONLY'
+        ($result.Warnings -join "`n") | Should -Match 'Extra key not present in example: DB_NAME'
+    }
+
     It 'Round-trips exported values with embedded quotes' {
         $exportPath = Join-Path $script:TestRoot '.env.export'
         $env:QUOTED_VALUE = 'hello "world" there'
@@ -133,6 +167,50 @@ EMPTY_VALUE=
         $result = ConvertFrom-DotEnv -Path $exportPath
 
         $result.QUOTED_VALUE | Should -Be 'hello "world" there'
+    }
+
+    It 'Reads dotenv maps and single values without changing the environment' {
+        $result = Read-DotEnvMap -Path $script:EnvPath
+        $value = Get-DotEnvValue -Path $script:EnvPath -Name API_URL
+
+        $result.API_URL | Should -Be 'https://localhost:8443'
+        $value | Should -Be 'https://localhost:8443'
+        Test-Path Env:\API_URL | Should -BeFalse
+    }
+
+    It 'Sets and removes values in dotenv files' {
+        Set-DotEnvValue -Path $script:EnvPath -Name NEW_VALUE -Value 'hello "world"' | Out-Null
+
+        (Get-DotEnvValue -Path $script:EnvPath -Name NEW_VALUE) | Should -Be 'hello "world"'
+
+        Remove-DotEnvValue -Path $script:EnvPath -Name NEW_VALUE | Out-Null
+
+        Get-DotEnvValue -Path $script:EnvPath -Name NEW_VALUE | Should -BeNullOrEmpty
+    }
+
+    It 'Runs commands with temporary dotenv variables' {
+        $powerShellPath = (Get-Process -Id $PID).Path
+        $output = Invoke-DotEnvCommand `
+            -Path $script:EnvPath `
+            -Command $powerShellPath `
+            -ArgumentList @('-NoProfile', '-Command', '[Console]::Write($env:API_URL)') `
+            -Override
+
+        $output | Should -Be 'https://localhost:8443'
+        Test-Path Env:\API_URL | Should -BeFalse
+    }
+
+    It 'Checks dotenv gitignore hygiene' {
+        Set-Content -Path (Join-Path $script:TestRoot '.gitignore') -Value @(
+            '.env'
+            '.env.*'
+            '.env.keys'
+        ) -Encoding UTF8
+
+        $result = Test-DotEnvGitIgnore -Path $script:TestRoot
+
+        $result.IsProtected | Should -BeTrue
+        @($result.MissingPatterns).Count | Should -Be 0
     }
 
     It 'Reloads unchanged dotenv file when tracked variables are missing' {
@@ -245,6 +323,16 @@ SHARED_VALUE=development-local
         $env:DEV_LOCAL_ONLY | Should -Be 'development-local'
         $env:SHARED_VALUE | Should -Be 'base'
     }
+
+    It 'Finds dotenv files by searching parent directories' {
+        $child = Join-Path $script:LayerRoot 'nested\child'
+        New-Item -Path $child -ItemType Directory -Force | Out-Null
+
+        $files = @(Find-DotEnvFile -Path $child -IncludeVariants -EnvironmentName development)
+
+        @($files).Count | Should -Be 4
+        [System.IO.Path]::GetFileName($files[0]) | Should -Be '.env'
+    }
 }
 
 Describe 'DotEnvTools variable expansion' {
@@ -282,6 +370,18 @@ LITERAL_VALUE=${MISSING_VALUE}
     }
 
     It 'Expands variables when ExpandVariables is used' {
+        Import-DotEnvFile -Path $script:ExpandRoot -Override -ExpandVariables | Out-Null
+
+        $env:API_URL | Should -Be 'http://localhost:8080'
+    }
+
+    It 'Expands unbraced variables when ExpandVariables is used' {
+        Set-Content -Path (Join-Path $script:ExpandRoot '.env') -Value @(
+            'HOST=localhost'
+            'PORT=8080'
+            'API_URL=http://$HOST:$PORT'
+        ) -Encoding UTF8
+
         Import-DotEnvFile -Path $script:ExpandRoot -Override -ExpandVariables | Out-Null
 
         $env:API_URL | Should -Be 'http://localhost:8080'
