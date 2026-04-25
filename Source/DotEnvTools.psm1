@@ -589,7 +589,10 @@ This command only writes to the current process environment.
                             $action = 'Updated'
                         }
 
-                        if ($PSCmdlet.ShouldProcess(("{0}:{1}" -f $Scope, $name), 'Set environment variable')) {
+                        if ($PSCmdlet.ShouldProcess(
+                                ("{0}:{1}" -f $Scope, $name),
+                                ("Set from {0}" -f (Split-Path $file -Leaf))
+                            )) {
                             Set-Item -Path $envPath -Value $value -ErrorAction Stop
                             $changed = $true
 
