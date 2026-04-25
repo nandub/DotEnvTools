@@ -1,6 +1,6 @@
 ﻿@{
     RootModule = 'DotEnvTools.psm1'
-    ModuleVersion = '0.5.2'
+    ModuleVersion = '0.6.0'
     GUID = '4d69b4ea-9d83-4e24-8d6f-6b74c3a6d052'
     Author = 'DotEnvTools Contributors'
     CompanyName = 'Community'
@@ -14,6 +14,7 @@
         'Enable-DotEnvAutoLoad',
         'Export-DotEnvFile',
         'Get-DotEnvAutoLoadState',
+        'Get-DotEnvFilePath',
         'Import-DotEnvFile',
         'Invoke-DotEnvAutoLoadNow',
         'Read-DotEnvFile',

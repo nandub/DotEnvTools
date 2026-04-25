@@ -25,41 +25,60 @@ if ($null -eq $dotEnvStateVariable) {
 }
 
 function Get-DotEnvFilePath {
-<#!
+<#
 .SYNOPSIS
-Resolves .env file paths.
+Resolves .env file paths in deterministic load order.
+
 .DESCRIPTION
-Resolves a single .env path or a directory containing .env files. Internal helper.
+Returns existing .env files from either a direct .env file path or a directory path.
+When -IncludeVariants is used, variant files are returned in precedence order:
+
+.env
+.env.local
+.env.<EnvironmentName>
+.env.<EnvironmentName>.local
+
+Only existing files are returned.
+
 .PARAMETER Path
-File or directory path.
+A .env file path or directory path.
+
 .PARAMETER IncludeVariants
-Include .env.local and .env.<EnvironmentName> when present.
+Includes supported .env variant files.
+
 .PARAMETER EnvironmentName
-Optional environment name for .env.<EnvironmentName>.
+Optional environment name, such as development, test, staging, or production.
+
 .EXAMPLE
-Get-DotEnvFilePath -Path . -IncludeVariants -EnvironmentName development
+Get-DotEnvFilePath -Path .\
+
+.EXAMPLE
+Get-DotEnvFilePath -Path .\ -IncludeVariants -EnvironmentName development
+
 .INPUTS
 System.String
+
 .OUTPUTS
 System.String
+
 .NOTES
-Internal helper. Windows PowerShell 5.1 compatible.
+Windows PowerShell 5.1 compatible.
 #>
     [CmdletBinding(SupportsShouldProcess = $true)]
     [OutputType([string])]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
         [ValidateNotNullOrEmpty()]
         [string]$Path,
 
-        [Parameter()]
+        [Parameter(Mandatory = $false)]
         [switch]$IncludeVariants,
 
-        [Parameter()]
+        [Parameter(Mandatory = $false)]
         [string]$EnvironmentName
     )
 
-    begin { }
+    begin {}
 
     process {
         try {
@@ -67,8 +86,9 @@ Internal helper. Windows PowerShell 5.1 compatible.
 
             if (Test-Path -LiteralPath $resolvedPath -PathType Leaf) {
                 if ($PSCmdlet.ShouldProcess($resolvedPath, 'Return .env file path')) {
-                    Write-Output $resolvedPath
+                    $resolvedPath
                 }
+
                 return
             }
 
@@ -82,27 +102,29 @@ Internal helper. Windows PowerShell 5.1 compatible.
 
             if ($IncludeVariants) {
                 [void]$candidateNames.Add('.env.local')
+
                 if (-not [string]::IsNullOrWhiteSpace($EnvironmentName)) {
                     [void]$candidateNames.Add(('.env.{0}' -f $EnvironmentName))
                     [void]$candidateNames.Add(('.env.{0}.local' -f $EnvironmentName))
                 }
             }
 
-            foreach ($name in $candidateNames) {
-                $candidate = Join-Path $resolvedPath $name
-                if (Test-Path -LiteralPath $candidate -PathType Leaf) {
-                    if ($PSCmdlet.ShouldProcess($candidate, 'Return .env file path')) {
-                        Write-Output $candidate
+            foreach ($candidateName in $candidateNames) {
+                $candidatePath = Join-Path $resolvedPath $candidateName
+
+                if (Test-Path -LiteralPath $candidatePath -PathType Leaf) {
+                    if ($PSCmdlet.ShouldProcess($candidatePath, 'Return .env file path')) {
+                        $candidatePath
                     }
                 }
             }
         }
         catch {
-            Write-Error -Message ("Failed to resolve .env path '{0}'. {1}" -f $Path, $_.Exception.Message) -Category InvalidOperation
+            Write-Error -Message ("Failed to resolve .env file path from '{0}'. {1}" -f $Path, $_.Exception.Message) -Category InvalidOperation
         }
     }
 
-    end { }
+    end {}
 }
 
 function Test-DotEnvTrustedPath {
@@ -1327,18 +1349,3 @@ Windows PowerShell 5.1 compatible.
         }
     }
 }
-
-Export-ModuleMember -Function @(
-    'Add-DotEnvAutoLoadProfile',
-    'ConvertFrom-DotEnv',
-    'Disable-DotEnvAutoLoad',
-    'Enable-DotEnvAutoLoad',
-    'Export-DotEnvFile',
-    'Get-DotEnvAutoLoadState',
-    'Import-DotEnvFile',
-    'Invoke-DotEnvAutoLoadNow',
-    'Read-DotEnvFile',
-    'Remove-DotEnvAutoLoadProfile',
-    'Remove-DotEnvVariable',
-    'Test-DotEnvFile'
-)

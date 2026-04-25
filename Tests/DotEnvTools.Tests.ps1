@@ -116,3 +116,89 @@ EMPTY_VALUE=
         }
     }
 }
+
+Describe 'DotEnvTools layered dotenv loading' {
+
+    BeforeEach {
+        $script:LayerRoot = Join-Path $TestDrive 'DotEnvToolsLayerCase'
+        New-Item -Path $script:LayerRoot -ItemType Directory -Force | Out-Null
+
+@'
+BASE_ONLY=base
+SHARED_VALUE=base
+'@ | Set-Content -Path (Join-Path $script:LayerRoot '.env') -Encoding UTF8
+
+@'
+LOCAL_ONLY=local
+SHARED_VALUE=local
+'@ | Set-Content -Path (Join-Path $script:LayerRoot '.env.local') -Encoding UTF8
+
+@'
+DEV_ONLY=development
+SHARED_VALUE=development
+'@ | Set-Content -Path (Join-Path $script:LayerRoot '.env.development') -Encoding UTF8
+
+@'
+DEV_LOCAL_ONLY=development-local
+SHARED_VALUE=development-local
+'@ | Set-Content -Path (Join-Path $script:LayerRoot '.env.development.local') -Encoding UTF8
+
+        Remove-Item Env:\BASE_ONLY -ErrorAction SilentlyContinue
+        Remove-Item Env:\LOCAL_ONLY -ErrorAction SilentlyContinue
+        Remove-Item Env:\DEV_ONLY -ErrorAction SilentlyContinue
+        Remove-Item Env:\DEV_LOCAL_ONLY -ErrorAction SilentlyContinue
+        Remove-Item Env:\SHARED_VALUE -ErrorAction SilentlyContinue
+    }
+
+    AfterEach {
+        Disable-DotEnvAutoLoad -ErrorAction SilentlyContinue | Out-Null
+
+        Remove-Item Env:\BASE_ONLY -ErrorAction SilentlyContinue
+        Remove-Item Env:\LOCAL_ONLY -ErrorAction SilentlyContinue
+        Remove-Item Env:\DEV_ONLY -ErrorAction SilentlyContinue
+        Remove-Item Env:\DEV_LOCAL_ONLY -ErrorAction SilentlyContinue
+        Remove-Item Env:\SHARED_VALUE -ErrorAction SilentlyContinue
+    }
+
+    It 'Resolves layered dotenv files in deterministic order' {
+        $files = @(
+            Get-DotEnvFilePath -Path $script:LayerRoot -IncludeVariants -EnvironmentName development
+        )
+
+        @($files).Count | Should -Be 4
+        [System.IO.Path]::GetFileName($files[0]) | Should -Be '.env'
+        [System.IO.Path]::GetFileName($files[1]) | Should -Be '.env.local'
+        [System.IO.Path]::GetFileName($files[2]) | Should -Be '.env.development'
+        [System.IO.Path]::GetFileName($files[3]) | Should -Be '.env.development.local'
+    }
+
+    It 'Loads only .env when variants are not included' {
+        Import-DotEnvFile -Path $script:LayerRoot -Override | Out-Null
+
+        $env:BASE_ONLY | Should -Be 'base'
+        $env:LOCAL_ONLY | Should -BeNullOrEmpty
+        $env:DEV_ONLY | Should -BeNullOrEmpty
+        $env:DEV_LOCAL_ONLY | Should -BeNullOrEmpty
+        $env:SHARED_VALUE | Should -Be 'base'
+    }
+
+    It 'Loads layered dotenv files with override precedence' {
+        Import-DotEnvFile -Path $script:LayerRoot -IncludeVariants -EnvironmentName development -Override | Out-Null
+
+        $env:BASE_ONLY | Should -Be 'base'
+        $env:LOCAL_ONLY | Should -Be 'local'
+        $env:DEV_ONLY | Should -Be 'development'
+        $env:DEV_LOCAL_ONLY | Should -Be 'development-local'
+        $env:SHARED_VALUE | Should -Be 'development-local'
+    }
+
+    It 'Preserves first value when NoClobber is active' {
+        Import-DotEnvFile -Path $script:LayerRoot -IncludeVariants -EnvironmentName development -NoClobber | Out-Null
+
+        $env:BASE_ONLY | Should -Be 'base'
+        $env:LOCAL_ONLY | Should -Be 'local'
+        $env:DEV_ONLY | Should -Be 'development'
+        $env:DEV_LOCAL_ONLY | Should -Be 'development-local'
+        $env:SHARED_VALUE | Should -Be 'base'
+    }
+}
