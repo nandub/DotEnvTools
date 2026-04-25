@@ -1,195 +1,103 @@
-# # Changelog
+# Changelog
 
-# 
+All notable changes to this project will be documented in this file.
 
-# All notable changes to this project will be documented in this file.
+This project follows a pragmatic versioning approach:
 
-# 
-
-# This project follows a pragmatic versioning approach:
-
-# 
-
-# - 0.5.x → stabilization and core functionality
-
-# - 0.6.x → feature expansion (layering)
-
-# - 0.7.0 → variable expansion
-
-# - 1.0.0 → production-ready public release
-
-# 
+- 0.5.x: stabilization and core functionality
+- 0.6.x: feature expansion with layered dotenv loading
+- 0.7.x: variable expansion and behavior hardening
+- 1.0.0: production-ready public release
 
 ---
+
+## [0.7.1] - 2026-04-25
+
+### Fixed
+
+- Prevented `Remove-DotEnvVariable` and `RemoveOnExit` cleanup from removing pre-existing variables that were skipped by default no-clobber imports.
+- Made `Test-DotEnvFile` report strict parser errors through its returned `Errors` collection and set `IsValid` to `False` for malformed dotenv files.
+- Preserved embedded double quotes when exporting and parsing double-quoted values.
+- Preserved dotenv file order during parsing so opt-in variable expansion is deterministic.
+- Returned the actual removal state from `Disable-DotEnvAutoLoad -RemoveCurrent`.
+
+### Documentation
+
+- Rebuilt the README with current usage for validation, export, variable expansion, auto-load cleanup, and quality checks.
+- Updated known issues and design notes for the current parser behavior.
 
 ## [0.7.0] - 2026-04-25
 
 ### Added
+
 - Added opt-in variable expansion using `${NAME}` syntax.
 - Added expansion support to `Import-DotEnvFile` through `-ExpandVariables`.
 - Added tests for default raw behavior, expanded values, and missing references.
 
 ### Security
+
 - Expansion is text-only and does not execute commands.
 - Missing references are preserved unchanged.
 
-# ---
+## [0.6.0] - 2026-04-25
 
-# 
+### Added
 
-# ## [0.6.0] - 2026-04-25
+- Added layered `.env` file support:
+  - `.env`
+  - `.env.local`
+  - `.env.<EnvironmentName>`
+  - `.env.<EnvironmentName>.local`
+- Added `Get-DotEnvFilePath` for deterministic `.env` resolution.
+- Added Pester tests for layered loading and precedence behavior.
 
-# 
+### Changed
 
-# ### Added
+- Updated `Import-DotEnvFile`, `Remove-DotEnvVariable`, and `Invoke-DotEnvAutoLoadNow` to use `Get-DotEnvFilePath` for file resolution.
+- Standardized load order across dotenv operations.
+- Updated the README with layered usage examples.
 
-# - Layered `.env` file support:
+### Fixed
 
-# &#x20; - `.env`
+- Corrected file precedence behavior with `-Override` and `-NoClobber`.
+- Eliminated parameter contract drift between functions.
 
-# &#x20; - `.env.local`
+## [0.5.2] - 2026-04-25
 
-# &#x20; - `.env.<EnvironmentName>`
+### Added
 
-# &#x20; - `.env.<EnvironmentName>.local`
+- Added stable Pester coverage for parsing, import/remove lifecycle, and auto-load regression behavior.
 
-# - New `Get-DotEnvFilePath` function for deterministic `.env` resolution
+### Changed
 
-# - Pester tests for layered loading and precedence behavior
+- Normalized parser and reader data flow through `ConvertFrom-DotEnv` and `Read-DotEnvFile`.
+- Updated module structure to use `.psd1` as the single export contract.
+- Improved test reliability for empty values.
 
-# 
+### Fixed
 
-# ### Changed
+- Fixed auto-load reload behavior when tracked variables are missing and file hashes are unchanged.
+- Fixed `$null` vs empty-string handling for `EMPTY_VALUE=`.
+- Fixed integration issues between parser, reader, and import pipeline.
+- Fixed `Remove-DotEnvVariable` state tracking for previous values.
+- Fixed parameter mismatches around `-EnvironmentName` and `-IncludeVariants`.
 
-# - `Import-DotEnvFile`, `Remove-DotEnvVariable`, and `Invoke-DotEnvAutoLoadNow`
+## [0.5.1] - 2026-04-25
 
-# &#x20; now use `Get-DotEnvFilePath` for file resolution
+### Fixed
 
-# - Standardized load order across all operations
+- Reloaded `.env` files when variables are missing even if the file hash is unchanged.
+- Improved tracking of loaded variables per file.
 
-# - Updated README with layered usage examples
+## [0.5.0] - 2026-04-25
 
-# 
+### Added
 
-# ### Fixed
+- Added initial working implementation of DotEnvTools.
+- Added parser, reader, importer, and remover commands.
+- Added auto-load and profile integration commands.
+- Added build and quality check scripts.
 
-# - Correct handling of file precedence with `-Override` and `-NoClobber`
+### Notes
 
-# - Eliminated parameter contract drift between functions
-
-# 
-
-# ---
-
-# 
-
-# ## [0.5.2] - 2026-04-25
-
-# 
-
-# ### Added
-
-# - Stable Pester test suite for:
-
-# &#x20; - parsing
-
-# &#x20; - import/remove lifecycle
-
-# &#x20; - auto-load regression behavior
-
-# 
-
-# ### Changed
-
-# - Normalized data flow:
-
-# &#x20; - `ConvertFrom-DotEnv` → object
-
-# &#x20; - `Read-DotEnvFile` → Name/Value records
-
-# - Updated module structure to use `.psd1` as the single export contract
-
-# - Improved test reliability for empty values
-
-# 
-
-# ### Fixed
-
-# - Fixed auto-load bug where unchanged `.env` files were not reloaded when variables were missing
-
-# - Fixed `$null` vs `''` handling for empty values (`EMPTY_VALUE=`)
-
-# - Fixed integration issues between parser, reader, and import pipeline
-
-# - Fixed `Remove-DotEnvVariable` state tracking (`HadPreviousValue`)
-
-# - Fixed multiple parameter mismatches (`-EnvironmentName`, `-IncludeVariants`, etc.)
-
-# 
-
-# ---
-
-# 
-
-# ## [0.5.1] - 2026-04-25
-
-# 
-
-# ### Fixed
-
-# - Auto-load logic now reloads `.env` files when variables are missing even if file hash is unchanged
-
-# - Improved tracking of loaded variables per file
-
-# 
-
-# ---
-
-# 
-
-# ## [0.5.0] - 2026-04-25
-
-# 
-
-# ### Added
-
-# - Initial working implementation of DotEnvTools
-
-# - Core functions:
-
-# &#x20; - `ConvertFrom-DotEnv`
-
-# &#x20; - `Read-DotEnvFile`
-
-# &#x20; - `Import-DotEnvFile`
-
-# &#x20; - `Remove-DotEnvVariable`
-
-# - Auto-load system:
-
-# &#x20; - `Enable-DotEnvAutoLoad`
-
-# &#x20; - `Disable-DotEnvAutoLoad`
-
-# &#x20; - `Invoke-DotEnvAutoLoadNow`
-
-# - Profile integration:
-
-# &#x20; - `Add-DotEnvAutoLoadProfile`
-
-# &#x20; - `Remove-DotEnvAutoLoadProfile`
-
-# - Build system:
-
-# &#x20; - `Build-DotEnvTools.ps1`
-
-# - Quality checks:
-
-# &#x20; - `Test-DotEnvToolsQuality.ps1`
-
-# 
-
-# ### Notes
-
-# - Initial version exposed several integration issues that were resolved in later releases
-
+- Initial version exposed several integration issues that were resolved in later releases.

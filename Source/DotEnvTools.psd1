@@ -1,6 +1,6 @@
 ﻿@{
     RootModule = 'DotEnvTools.psm1'
-    ModuleVersion = '0.7.0'
+    ModuleVersion = '0.7.1'
     GUID = '4d69b4ea-9d83-4e24-8d6f-6b74c3a6d052'
     Author = 'DotEnvTools Contributors'
     CompanyName = 'Community'
@@ -30,7 +30,7 @@
             Tags = @('dotenv', 'env', 'PowerShell', 'WindowsPowerShell')
             LicenseUri = ''
             ProjectUri = ''
-            ReleaseNotes = '0.5.2 stabilizes parser, reader, importer, and auto-load parameter flow.'
+            ReleaseNotes = '0.7.1 hardens no-clobber cleanup, strict validation reporting, quoted export round-trips, and documentation.'
         }
     }
 }

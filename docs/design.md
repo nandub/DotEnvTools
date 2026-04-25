@@ -15,9 +15,11 @@ Supported:
 - `KEY=value`
 - `KEY="quoted value"`
 - `KEY='literal value'`
+- escaped double quotes inside double-quoted values
 - empty values
 - full-line comments
 - safe inline comments for unquoted values
+- opt-in `${NAME}` variable expansion during import
 
 Not supported in this pass:
 

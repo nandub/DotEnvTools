@@ -1,97 +1,37 @@
 # DotEnvTools
 
-DotEnvTools is a Windows PowerShell 5.1-compatible module for reading, importing, removing, exporting, and auto-loading `.env` files.
+DotEnvTools is a Windows PowerShell 5.1-compatible module for reading, importing, removing, exporting, validating, and auto-loading `.env` files.
 
-It is designed for safe local development workflows where project-specific environment variables should load into the current PowerShell process without permanently modifying User or Machine environment variables.
+It is designed for safe local development workflows where project-specific environment variables load into the current PowerShell process without permanently modifying User or Machine environment variables.
 
 ## Features
 
 - Parse `.env` content safely without `Invoke-Expression`
 - Import `.env` variables into the current process
-- Remove variables defined by a `.env` file
-- Preserve existing variables unless `-Override` is used
-- Mask values in output by default
+- Remove or restore variables loaded from a `.env` file
+- Preserve existing variables by default unless `-Override` is used
+- Mask imported values in output by default
+- Validate `.env` syntax and optional `.env.example` coverage
+- Export process environment variables to `.env` format
 - Auto-load `.env` files when entering trusted directories
+- Optionally remove auto-loaded variables when leaving a project directory
 - Reload unchanged `.env` files when tracked variables are missing
 - Layered dotenv loading:
   - `.env`
   - `.env.local`
   - `.env.<EnvironmentName>`
   - `.env.<EnvironmentName>.local`
+- Opt-in `${NAME}` variable expansion
 - PowerShell 5.1 compatible
 - Pester test coverage
 - PSScriptAnalyzer-compatible project layout
 
-## Variable Expansion
-
-DotEnvTools 0.7.0 supports opt-in variable expansion.
-
-Example `.env`:
-
-```dotenv
-HOST=localhost
-PORT=8080
-API_URL=http://${HOST}:${PORT}
-
-## Repository Layout
-
-```text
-DotEnvTools\
-  Source\
-    DotEnvTools.psd1
-    DotEnvTools.psm1
-    en-US\
-      DotEnvTools-help.xml
-  Tests\
-    DotEnvTools.Tests.ps1
-  scripts\
-    Build-DotEnvTools.ps1
-    Test-DotEnvToolsQuality.ps1
-  CHANGELOG.md
-  LICENSE
-  PSScriptAnalyzerSettings.psd1
-  README.md
-````
-
-## Installation from Source
+## Installation From Source
 
 From the repository root:
 
 ```powershell
 Import-Module .\Source\DotEnvTools.psd1 -Force
-```
-
-## Build Deployable Package
-
-```powershell
-.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.6.0 -Verbose
-```
-
-This creates:
-
-```text
-dist\DotEnvTools\0.6.0\
-dist\DotEnvTools-0.6.0.zip
-```
-
-## Run Quality Checks
-
-Basic validation:
-
-```powershell
-.\scripts\Test-DotEnvToolsQuality.ps1 -ModuleRoot .\ -Verbose
-```
-
-Run tests:
-
-```powershell
-.\scripts\Test-DotEnvToolsQuality.ps1 -ModuleRoot .\ -RunTests -Verbose
-```
-
-Run tests and PSScriptAnalyzer:
-
-```powershell
-.\scripts\Test-DotEnvToolsQuality.ps1 -ModuleRoot .\ -RunAnalyzer -RunTests -Verbose
 ```
 
 ## Basic Usage
@@ -119,33 +59,13 @@ $env:DB_NAME
 $env:QUOTED_VALUE
 ```
 
-Remove variables defined in the file:
+Remove variables loaded from the file:
 
 ```powershell
 Remove-DotEnvVariable -Path .\.env -Verbose
 ```
 
-## Preview Changes with WhatIf
-
-```powershell
-Import-DotEnvFile -Path .\.env -WhatIf
-Remove-DotEnvVariable -Path .\.env -WhatIf
-Enable-DotEnvAutoLoad -TrustedPath C:\Projects -WhatIf
-```
-
-## PassThru Output
-
-By default, non-empty values are masked:
-
-```powershell
-Import-DotEnvFile -Path .\.env -PassThru
-```
-
-Reveal values explicitly:
-
-```powershell
-Import-DotEnvFile -Path .\.env -PassThru -RevealValues
-```
+`Remove-DotEnvVariable` only removes or restores variables that DotEnvTools previously loaded. Existing variables skipped by the default no-clobber behavior are left unchanged.
 
 ## Override Behavior
 
@@ -167,9 +87,52 @@ To explicitly preserve existing values:
 Import-DotEnvFile -Path .\.env -NoClobber
 ```
 
-## Layered Dotenv Loading
+When DotEnvTools overwrites a value, removal restores the original process value when it is still tracked.
 
-DotEnvTools 0.6.0 supports layered loading.
+## PassThru Output
+
+By default, non-empty values are masked:
+
+```powershell
+Import-DotEnvFile -Path .\.env -PassThru
+```
+
+Reveal values explicitly:
+
+```powershell
+Import-DotEnvFile -Path .\.env -PassThru -RevealValues
+```
+
+## Variable Expansion
+
+Variable expansion is opt-in. DotEnvTools expands `${NAME}` references from values already seen in the dotenv load order, then from the current process environment. Missing references are preserved as written.
+
+Example `.env`:
+
+```dotenv
+HOST=localhost
+PORT=8080
+API_URL=http://${HOST}:${PORT}
+LITERAL_VALUE=${MISSING_VALUE}
+```
+
+Import with expansion:
+
+```powershell
+Import-DotEnvFile -Path .\.env -ExpandVariables -Override
+```
+
+Result:
+
+```powershell
+$env:API_URL
+# http://localhost:8080
+
+$env:LITERAL_VALUE
+# ${MISSING_VALUE}
+```
+
+## Layered Dotenv Loading
 
 Given this directory:
 
@@ -226,7 +189,7 @@ $env:SHARED_VALUE
 # development-local
 ```
 
-Without `-Override`, the first value wins because `-NoClobber` behavior is the default.
+Without `-Override`, the first loaded value wins because no-clobber behavior is the default.
 
 ## Resolve Dotenv Files
 
@@ -236,16 +199,33 @@ Use `Get-DotEnvFilePath` to see which files would be loaded:
 Get-DotEnvFilePath -Path . -IncludeVariants -EnvironmentName development
 ```
 
-Expected order:
+Only existing files are returned.
 
-```text
-.env
-.env.local
-.env.development
-.env.development.local
+## Validation
+
+Validate `.env` syntax:
+
+```powershell
+Test-DotEnvFile -Path .\.env
 ```
 
-Only existing files are returned.
+Validate syntax and check that keys from `.env.example` exist in `.env`:
+
+```powershell
+Test-DotEnvFile -Path .\.env -ExamplePath .\.env.example
+```
+
+Malformed lines are reported in the returned `Errors` collection and set `IsValid` to `False`.
+
+## Export
+
+Export selected process environment variables:
+
+```powershell
+Export-DotEnvFile -Path .\.env.export -Name API_URL,DB_NAME -Force
+```
+
+Exported values containing whitespace, `#`, `=`, or embedded double quotes are quoted as needed. Double-quoted values round-trip through `ConvertFrom-DotEnv`.
 
 ## Auto-Load
 
@@ -263,6 +243,12 @@ Enable-DotEnvAutoLoad `
     -IncludeVariants `
     -EnvironmentName development `
     -Verbose
+```
+
+Remove loaded variables when leaving a project directory:
+
+```powershell
+Enable-DotEnvAutoLoad -TrustedPath C:\Projects -RemoveOnExit -Verbose
 ```
 
 Run auto-load immediately:
@@ -283,6 +269,12 @@ Disable auto-load:
 Disable-DotEnvAutoLoad -Verbose
 ```
 
+Disable auto-load and remove currently loaded variables:
+
+```powershell
+Disable-DotEnvAutoLoad -RemoveCurrent -Verbose
+```
+
 ## Profile Integration
 
 Add auto-load to the current user profile:
@@ -299,18 +291,79 @@ Remove-DotEnvAutoLoadProfile -WhatIf
 Remove-DotEnvAutoLoadProfile
 ```
 
+## Preview Changes With WhatIf
+
+```powershell
+Import-DotEnvFile -Path .\.env -WhatIf
+Remove-DotEnvVariable -Path .\.env -WhatIf
+Enable-DotEnvAutoLoad -TrustedPath C:\Projects -WhatIf
+```
+
+## Build Deployable Package
+
+```powershell
+.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.7.1 -Verbose
+```
+
+This creates:
+
+```text
+dist\DotEnvTools\0.7.1\
+dist\DotEnvTools-0.7.1.zip
+```
+
+## Run Quality Checks
+
+Basic validation:
+
+```powershell
+.\scripts\Test-DotEnvToolsQuality.ps1 -ModuleRoot .\ -Verbose
+```
+
+Run tests:
+
+```powershell
+.\scripts\Test-DotEnvToolsQuality.ps1 -ModuleRoot .\ -RunTests -Verbose
+```
+
+Run tests and PSScriptAnalyzer:
+
+```powershell
+.\scripts\Test-DotEnvToolsQuality.ps1 -ModuleRoot .\ -RunAnalyzer -RunTests -Verbose
+```
+
+## Repository Layout
+
+```text
+DotEnvTools\
+  Source\
+    DotEnvTools.psd1
+    DotEnvTools.psm1
+    en-US\
+      DotEnvTools-help.xml
+  Tests\
+    DotEnvTools.Tests.ps1
+  scripts\
+    Build-DotEnvTools.ps1
+    Test-DotEnvToolsQuality.ps1
+  CHANGELOG.md
+  LICENSE
+  PSScriptAnalyzerSettings.psd1
+  README.md
+```
+
 ## Security Notes
 
 DotEnvTools treats `.env` files as data.
 
 It does not:
 
-* execute commands
-* use `Invoke-Expression`
-* perform command substitution
-* modify User or Machine environment variables
-* override TLS validation
-* store credentials
+- execute commands
+- use `Invoke-Expression`
+- perform command substitution
+- modify User or Machine environment variables
+- override TLS validation
+- store credentials
 
 Auto-load should be enabled only for trusted project directories.
 
@@ -348,19 +401,3 @@ Update `FunctionsToExport` in the manifest when adding or removing public comman
 ## License
 
 MIT
-
-````
-
-After replacing it, delete the duplicate:
-
-```powershell
-Remove-Item .\Source\README.md -Force
-````
-
-Then run:
-
-```powershell
-.\scripts\Test-DotEnvToolsQuality.ps1 -ModuleRoot .\ -RunTests -Verbose
-.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.6.0 -Verbose
-```
-
