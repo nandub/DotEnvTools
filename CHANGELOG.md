@@ -12,6 +12,16 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [0.8.1] - 2026-04-25
+
+Internal version commit: pending.
+
+### Fixed
+
+- Hardened quoted value parsing so `#` inside quotes is preserved and comments after quoted values are ignored.
+- Reported unterminated quoted values as strict parser errors instead of treating them as literal values.
+- Added regression coverage for repeated keys and command environment restoration after nonzero command exits.
+
 ## [0.8.0] - 2026-04-25
 
 Internal version commit: `e3f82ae`.

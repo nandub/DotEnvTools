@@ -17,6 +17,8 @@ Supported:
 - `KEY="quoted value"`
 - `KEY='literal value'`
 - escaped double quotes inside double-quoted values
+- `#` characters inside quoted values
+- comments after quoted values
 - common double-quoted escapes such as `\n`, `\t`, and `\\`
 - quoted multiline values
 - empty values

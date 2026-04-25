@@ -1,6 +1,6 @@
 ﻿@{
     RootModule = 'DotEnvTools.psm1'
-    ModuleVersion = '0.8.0'
+    ModuleVersion = '0.8.1'
     GUID = '4d69b4ea-9d83-4e24-8d6f-6b74c3a6d052'
     Author = 'DotEnvTools Contributors'
     CompanyName = 'Community'
@@ -37,7 +37,7 @@
             Tags = @('dotenv', 'env', 'PowerShell', 'WindowsPowerShell')
             LicenseUri = ''
             ProjectUri = ''
-            ReleaseNotes = '0.8.0 adds command invocation, parse-only value APIs, dotenv file editing, search-up discovery, schema checks, gitignore hygiene, and parser compatibility improvements.'
+            ReleaseNotes = '0.8.1 hardens quoted value parsing, strict malformed quote reporting, and command environment restoration coverage.'
         }
     }
 }

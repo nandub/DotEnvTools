@@ -91,6 +91,39 @@ second"
         $result.MULTILINE_VALUE | Should -Be ("first{0}second" -f [Environment]::NewLine)
     }
 
+    It 'Preserves hash characters inside quotes and ignores comments after quoted values' {
+        $content = @'
+QUOTED_VALUE="hello # world" # outside comment
+SINGLE_VALUE='literal # value' # outside comment
+'@
+
+        $result = ConvertFrom-DotEnv -Content $content -Strict
+
+        $result.QUOTED_VALUE | Should -Be 'hello # world'
+        $result.SINGLE_VALUE | Should -Be 'literal # value'
+    }
+
+    It 'Reports unterminated quoted values in strict mode' {
+        $content = 'BROKEN_VALUE="hello'
+
+        $errors = $null
+        $result = ConvertFrom-DotEnv -Content $content -Strict -ErrorVariable errors -ErrorAction SilentlyContinue
+
+        $result.PSObject.Properties.Name | Should -Not -Contain 'BROKEN_VALUE'
+        ($errors.Exception.Message -join "`n") | Should -Match 'Unterminated quoted value'
+    }
+
+    It 'Uses the last value when a key is repeated' {
+        $content = @'
+API_URL=https://first.example
+API_URL=https://second.example
+'@
+
+        $result = ConvertFrom-DotEnv -Content $content
+
+        $result.API_URL | Should -Be 'https://second.example'
+    }
+
     It 'Reads EMPTY_VALUE as an empty string record' {
         $record = Read-DotEnvFile -Path $script:EnvPath |
             Where-Object { $_.Name -eq 'EMPTY_VALUE' }
@@ -198,6 +231,20 @@ second"
 
         $output | Should -Be 'https://localhost:8443'
         Test-Path Env:\API_URL | Should -BeFalse
+    }
+
+    It 'Restores previous values after command failures' {
+        $powerShellPath = (Get-Process -Id $PID).Path
+        $env:API_URL = 'pre-existing'
+
+        Invoke-DotEnvCommand `
+            -Path $script:EnvPath `
+            -Command $powerShellPath `
+            -ArgumentList @('-NoProfile', '-Command', 'exit 42') `
+            -Override `
+            -ErrorAction SilentlyContinue | Out-Null
+
+        $env:API_URL | Should -Be 'pre-existing'
     }
 
     It 'Checks dotenv gitignore hygiene' {

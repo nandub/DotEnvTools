@@ -143,6 +143,42 @@ This function does not execute commands.
     return $resolved
 }
 
+function Get-DotEnvQuotedValueEndIndex {
+    [CmdletBinding()]
+    [OutputType([int])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string]$Value,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('"', "'")]
+        [string]$Quote
+    )
+
+    $escaped = $false
+
+    for ($index = 1; $index -lt $Value.Length; $index++) {
+        $character = $Value.Substring($index, 1)
+
+        if ($Quote -eq '"' -and $escaped) {
+            $escaped = $false
+            continue
+        }
+
+        if ($Quote -eq '"' -and $character -eq '\') {
+            $escaped = $true
+            continue
+        }
+
+        if ($character -eq $Quote) {
+            return $index
+        }
+    }
+
+    return -1
+}
+
 function Get-DotEnvFilePath {
 <#
 .SYNOPSIS
@@ -432,16 +468,16 @@ Windows PowerShell 5.1 compatible.
 
                     if ($valueStart.Length -gt 0) {
                         $quote = $valueStart.Substring(0, 1)
+                        $quotedValueEndIndex = Get-DotEnvQuotedValueEndIndex -Value $valueStart -Quote $quote
 
                         while (
                             $index -lt ($physicalLines.Count - 1) -and
-                            -not (
-                                $logicalLine.TrimEnd().EndsWith($quote) -and
-                                ($quote -ne '"' -or -not $logicalLine.TrimEnd().EndsWith('\"'))
-                            )
+                            $quotedValueEndIndex -lt 0
                         ) {
                             $index++
                             $logicalLine = $logicalLine + [Environment]::NewLine + [string]$physicalLines[$index]
+                            $valueStart = $logicalLine.Substring($separatorIndex + 1).TrimStart()
+                            $quotedValueEndIndex = Get-DotEnvQuotedValueEndIndex -Value $valueStart -Quote $quote
                         }
                     }
                 }
@@ -507,14 +543,28 @@ Windows PowerShell 5.1 compatible.
                 $value = $value.Trim()
                 $wasQuoted = $false
 
-                if ($value.Length -ge 2) {
-                    if (
-                        ($value.StartsWith('"') -and $value.EndsWith('"')) -or
-                        ($value.StartsWith("'") -and $value.EndsWith("'"))
-                    ) {
+                if ($value.Length -gt 0) {
+                    if ($value.StartsWith('"') -or $value.StartsWith("'")) {
+                        $quote = $value.Substring(0, 1)
+                        $quotedValueEndIndex = Get-DotEnvQuotedValueEndIndex -Value $value -Quote $quote
+
+                        if ($quotedValueEndIndex -lt 0) {
+                            if ($Strict) {
+                                Write-Error -Message ("Invalid .env line. Unterminated quoted value: {0}" -f $line) -Category InvalidData
+                            }
+
+                            continue
+                        }
+
+                        $remainder = $value.Substring($quotedValueEndIndex + 1).Trim()
+                        if ($Strict -and -not [string]::IsNullOrWhiteSpace($remainder) -and -not $remainder.StartsWith('#')) {
+                            Write-Error -Message ("Invalid .env line. Unexpected content after quoted value: {0}" -f $line) -Category InvalidData
+                            continue
+                        }
+
                         $wasQuoted = $true
-                        $wasDoubleQuoted = $value.StartsWith('"')
-                        $value = $value.Substring(1, $value.Length - 2)
+                        $wasDoubleQuoted = $quote -eq '"'
+                        $value = $value.Substring(1, $quotedValueEndIndex - 1)
 
                         if ($wasDoubleQuoted) {
                             $value = $value -replace '\\n', "`n"
