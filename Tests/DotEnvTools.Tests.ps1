@@ -68,6 +68,14 @@ EMPTY_VALUE=
         $result.EMPTY_VALUE | Should -Be ''
     }
 
+    It 'Unescapes quotes inside double quoted values' {
+        $content = 'QUOTED_VALUE="hello \"world\" there"'
+
+        $result = ConvertFrom-DotEnv -Content $content
+
+        $result.QUOTED_VALUE | Should -Be 'hello "world" there'
+    }
+
     It 'Reads EMPTY_VALUE as an empty string record' {
         $record = Read-DotEnvFile -Path $script:EnvPath |
             Where-Object { $_.Name -eq 'EMPTY_VALUE' }
@@ -89,6 +97,42 @@ EMPTY_VALUE=
         Test-Path Env:\DB_NAME | Should -BeFalse
         Test-Path Env:\QUOTED_VALUE | Should -BeFalse
         Test-Path Env:\EMPTY_VALUE | Should -BeFalse
+    }
+
+    It 'Does not remove existing variables skipped by NoClobber' {
+        $env:API_URL = 'pre-existing'
+
+        Import-DotEnvFile -Path $script:EnvPath | Out-Null
+
+        $env:API_URL | Should -Be 'pre-existing'
+
+        Remove-DotEnvVariable -Path $script:EnvPath | Out-Null
+
+        $env:API_URL | Should -Be 'pre-existing'
+    }
+
+    It 'Reports malformed dotenv files as invalid' {
+        Set-Content -Path $script:EnvPath -Value @(
+            'API_URL=https://localhost:8443'
+            'BADLINE'
+        ) -Encoding UTF8
+
+        $result = Test-DotEnvFile -Path $script:EnvPath
+
+        $result.IsValid | Should -BeFalse
+        $result.ErrorCount | Should -BeGreaterThan 0
+        ($result.Errors -join "`n") | Should -Match "Missing '=' delimiter"
+    }
+
+    It 'Round-trips exported values with embedded quotes' {
+        $exportPath = Join-Path $script:TestRoot '.env.export'
+        $env:QUOTED_VALUE = 'hello "world" there'
+
+        Export-DotEnvFile -Path $exportPath -Name QUOTED_VALUE -Force | Out-Null
+
+        $result = ConvertFrom-DotEnv -Path $exportPath
+
+        $result.QUOTED_VALUE | Should -Be 'hello "world" there'
     }
 
     It 'Reloads unchanged dotenv file when tracked variables are missing' {

@@ -391,7 +391,7 @@ Windows PowerShell 5.1 compatible.
                 $rawContent = ($contentBuffer -join [Environment]::NewLine)
             }
 
-            $result = @{}
+            $result = [ordered]@{}
 
             $lines = $rawContent -split "`r?`n"
 
@@ -445,7 +445,12 @@ Windows PowerShell 5.1 compatible.
                         ($value.StartsWith('"') -and $value.EndsWith('"')) -or
                         ($value.StartsWith("'") -and $value.EndsWith("'"))
                     ) {
+                        $wasDoubleQuoted = $value.StartsWith('"')
                         $value = $value.Substring(1, $value.Length - 2)
+
+                        if ($wasDoubleQuoted) {
+                            $value = $value -replace '\\"', '"'
+                        }
                     }
                 }
 
@@ -868,6 +873,7 @@ Windows PowerShell 5.1 compatible.
                     $existsBefore = Test-Path -Path $envPath
                     $action = 'Remove'
                     $changed = $false
+                    $wasLoaded = $script:DotEnvState.LoadedVariables.ContainsKey($name)
 
                     $hasOriginalValue = $false
                     $originalValue = $null
@@ -877,7 +883,10 @@ Windows PowerShell 5.1 compatible.
                         $originalValue = $script:DotEnvState.OriginalValues[$name]
                     }
 
-                    if ($PSCmdlet.ShouldProcess(("Process:{0}" -f $name), $action)) {
+                    if (-not $wasLoaded) {
+                        $action = 'SkippedUntracked'
+                    }
+                    elseif ($PSCmdlet.ShouldProcess(("Process:{0}" -f $name), $action)) {
                         if ($hasOriginalValue -and $null -ne $originalValue) {
                             Set-Item -Path $envPath -Value ([string]$originalValue) -ErrorAction Stop
                             $action = 'Restored'
@@ -959,11 +968,21 @@ Windows PowerShell 5.1 compatible.
 
         try {
             if ($PSCmdlet.ShouldProcess($Path, 'Validate .env file')) {
-                $records = @(Read-DotEnvFile -Path $Path -Strict)
+                $strictErrors = $null
+                $records = @(Read-DotEnvFile -Path $Path -Strict -ErrorVariable strictErrors -ErrorAction SilentlyContinue)
+                foreach ($strictError in @($strictErrors)) {
+                    [void]$errors.Add($strictError.Exception.Message)
+                }
+
                 $keys = @($records | Select-Object -ExpandProperty Name -Unique)
 
                 if ($ExamplePath) {
-                    $exampleRecords = @(Read-DotEnvFile -Path $ExamplePath -Strict)
+                    $exampleStrictErrors = $null
+                    $exampleRecords = @(Read-DotEnvFile -Path $ExamplePath -Strict -ErrorVariable exampleStrictErrors -ErrorAction SilentlyContinue)
+                    foreach ($exampleStrictError in @($exampleStrictErrors)) {
+                        [void]$errors.Add($exampleStrictError.Exception.Message)
+                    }
+
                     foreach ($exampleName in @($exampleRecords | Select-Object -ExpandProperty Name -Unique)) {
                         if ($keys -notcontains $exampleName) {
                             [void]$warnings.Add("Missing key from example: $exampleName")
@@ -1428,7 +1447,7 @@ Windows PowerShell 5.1 compatible.
 
             [pscustomobject]@{
                 Enabled = $false
-                RemovedCurrent = [bool]$RemoveCurrent
+                RemovedCurrent = $removedCurrent
             }
         }
     }
