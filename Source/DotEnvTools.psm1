@@ -19,9 +19,125 @@ if ($null -eq $dotEnvStateVariable) {
         IncludeVariants = $false
         EnvironmentName = $null
         Override = $false
-        NoClobber = $true
+        NoClobber = $false
         RevealValues = $false
     }
+}
+
+function Resolve-DotEnvValue {
+<#
+.SYNOPSIS
+Resolves ${NAME} references inside a dotenv value.
+
+.DESCRIPTION
+Expands variable references in the form ${NAME} using a provided value map first,
+then the current process environment. Missing variables are preserved unchanged.
+
+.PARAMETER Value
+The raw value to resolve.
+
+.PARAMETER ValueMap
+Hashtable of already-known dotenv values.
+
+.PARAMETER MaxDepth
+Maximum recursive expansion depth.
+
+.EXAMPLE
+Resolve-DotEnvValue -Value 'http://${HOST}:${PORT}' -ValueMap @{ HOST = 'localhost'; PORT = '8080' }
+
+.INPUTS
+System.String
+
+.OUTPUTS
+System.String
+
+.NOTES
+Windows PowerShell 5.1 compatible.
+This function does not execute commands.
+#>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $false)]
+        [AllowNull()]
+        [string]$Value,
+
+        [Parameter(Mandatory = $false)]
+        [hashtable]$ValueMap,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 50)]
+        [int]$MaxDepth = 10
+    )
+
+    if ($null -eq $Value) {
+        return ''
+    }
+
+    $resolved = [string]$Value
+    $pattern = '\$\{([A-Za-z_][A-Za-z0-9_]*)\}'
+
+    for ($depth = 0; $depth -lt $MaxDepth; $depth++) {
+        $regexMatches = [regex]::Matches($resolved, $pattern)
+
+        if ($regexMatches.Count -eq 0) {
+            break
+        }
+
+        $builder = New-Object System.Text.StringBuilder
+        $lastIndex = 0
+        $changed = $false
+
+        foreach ($match in $regexMatches) {
+            [void]$builder.Append($resolved.Substring($lastIndex, $match.Index - $lastIndex))
+
+            $name = $match.Groups[1].Value
+            $replacement = $null
+            $found = $false
+
+            if ($null -ne $ValueMap -and $ValueMap.ContainsKey($name)) {
+                $replacement = $ValueMap[$name]
+                $found = $true
+            }
+            else {
+                $envPath = "Env:\{0}" -f $name
+
+                if (Test-Path -Path $envPath) {
+                    $replacement = (Get-Item -Path $envPath).Value
+                    $found = $true
+                }
+            }
+
+            if ($found) {
+                if ($null -eq $replacement) {
+                    $replacement = ''
+                }
+
+                [void]$builder.Append([string]$replacement)
+                $changed = $true
+            }
+            else {
+                [void]$builder.Append($match.Value)
+            }
+
+            $lastIndex = $match.Index + $match.Length
+        }
+
+        if ($lastIndex -lt $resolved.Length) {
+            [void]$builder.Append($resolved.Substring($lastIndex))
+        }
+
+        $newResolved = $builder.ToString()
+
+        if (-not $changed -or $newResolved -eq $resolved) {
+            $resolved = $newResolved
+            break
+        }
+
+        $resolved = $newResolved
+    }
+
+    return $resolved
 }
 
 function Get-DotEnvFilePath {
@@ -148,7 +264,7 @@ System.Boolean
 .NOTES
 Internal helper. Windows PowerShell 5.1 compatible.
 #>
-    [CmdletBinding(SupportsShouldProcess = $true)]
+    [CmdletBinding()]
     [OutputType([bool])]
     param(
         [Parameter(Mandatory = $true)]
@@ -392,10 +508,7 @@ Windows PowerShell 5.1 compatible.
         [string]$Path,
 
         [Parameter(Mandatory = $false)]
-        [switch]$Strict,
-
-        [Parameter(Mandatory = $false)]
-        [switch]$IncludeVariants
+        [switch]$Strict
     )
 
     begin {}
@@ -441,12 +554,16 @@ function Import-DotEnvFile {
 Imports variables from one or more .env files into the current PowerShell process.
 
 .DESCRIPTION
-Reads .env-formatted files and loads the variables into the current process
-environment through the PowerShell Env: provider.
+Reads .env-formatted files and loads variables into the current process environment
+through the PowerShell Env: provider.
 
 The function resolves dotenv files using Get-DotEnvFilePath, then reads each file
-with Read-DotEnvFile. Empty values are preserved as empty strings, not converted
-to null.
+with Read-DotEnvFile.
+
+By default, values are imported exactly as written. When -ExpandVariables is used,
+references in the form ${NAME} are expanded using previously loaded dotenv values
+first, then current process environment variables. Missing references are preserved
+unchanged.
 
 .PARAMETER Path
 Path to a .env file or directory containing .env files.
@@ -465,11 +582,15 @@ Includes supported variant files such as .env.local and .env.<EnvironmentName>
 when resolving files.
 
 .PARAMETER EnvironmentName
-Optional environment suffix used with variant files, such as development,
-test, production, or prod.
+Optional environment suffix used with variant files, such as development, test,
+staging, production, or prod.
 
 .PARAMETER Strict
 Enables strict parsing behavior in the reader/parser.
+
+.PARAMETER ExpandVariables
+Expands ${NAME} references in values using already-loaded dotenv values first,
+then current process environment variables. Missing references are preserved.
 
 .PARAMETER PassThru
 Returns import result records.
@@ -486,6 +607,9 @@ Import-DotEnvFile -Path .\.env -Verbose -PassThru
 .EXAMPLE
 Import-DotEnvFile -Path . -IncludeVariants -EnvironmentName development -Override -Verbose
 
+.EXAMPLE
+Import-DotEnvFile -Path .\.env -ExpandVariables -Override -Verbose
+
 .INPUTS
 System.String
 
@@ -495,6 +619,7 @@ System.Management.Automation.PSCustomObject
 .NOTES
 Windows PowerShell 5.1 compatible.
 This command only writes to the current process environment.
+Variable expansion is text-only and does not execute commands.
 #>
     [CmdletBinding(SupportsShouldProcess = $true)]
     [OutputType([pscustomobject])]
@@ -523,13 +648,18 @@ This command only writes to the current process environment.
         [switch]$Strict,
 
         [Parameter(Mandatory = $false)]
+        [switch]$ExpandVariables,
+
+        [Parameter(Mandatory = $false)]
         [switch]$PassThru,
 
         [Parameter(Mandatory = $false)]
         [switch]$RevealValues
     )
 
-    begin {}
+    begin {
+        $valueMap = @{}
+    }
 
     process {
         try {
@@ -570,12 +700,20 @@ This command only writes to the current process environment.
                         $value = [string]$value
                     }
 
+                    if ($ExpandVariables) {
+                        $value = Resolve-DotEnvValue -Value $value -ValueMap $valueMap
+                    }
+
                     $envPath = "Env:\{0}" -f $name
                     $hadPreviousValue = Test-Path -Path $envPath
                     $previousValue = $null
 
                     if ($hadPreviousValue) {
-                        $previousValue = (Get-Item -Path $envPath -ErrorAction SilentlyContinue).Value
+                        $previousItem = Get-Item -Path $envPath -ErrorAction SilentlyContinue
+
+                        if ($null -ne $previousItem) {
+                            $previousValue = $previousItem.Value
+                        }
                     }
 
                     $action = 'Set'
@@ -591,7 +729,7 @@ This command only writes to the current process environment.
 
                         if ($PSCmdlet.ShouldProcess(
                                 ("{0}:{1}" -f $Scope, $name),
-                                ("Set from {0}" -f (Split-Path $file -Leaf))
+                                ("Set from {0}" -f (Split-Path -Path $file -Leaf))
                             )) {
                             Set-Item -Path $envPath -Value $value -ErrorAction Stop
                             $changed = $true
@@ -607,6 +745,11 @@ This command only writes to the current process environment.
                             }
                         }
                     }
+
+                    # Keep the current resolved value available for later variables and later layers.
+                    # This is intentional even when NoClobber skips an existing environment variable:
+                    # the dotenv file's own value remains available for expansion in subsequent keys.
+                    $valueMap[$name] = $value
 
                     if ($PassThru) {
                         $displayValue = $value
@@ -1172,7 +1315,7 @@ Auto-load is opt-in. Windows PowerShell 5.1 compatible.
             $script:DotEnvState.NoClobber = -not [bool]$Override
             if ($NoClobber) { $script:DotEnvState.NoClobber = $true }
 
-            function global:prompt {
+            $dotEnvPromptScriptBlock = {
                 try {
                     Invoke-DotEnvAutoLoadNow -ErrorAction SilentlyContinue | Out-Null
                 }
@@ -1187,6 +1330,8 @@ Auto-load is opt-in. Windows PowerShell 5.1 compatible.
                     "PS $($executionContext.SessionState.Path.CurrentLocation)> "
                 }
             }
+
+            Set-Item -Path Function:\global:prompt -Value $dotEnvPromptScriptBlock -Force
 
             [pscustomobject]@{
                 Enabled = $true

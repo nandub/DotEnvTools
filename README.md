@@ -22,6 +22,17 @@ It is designed for safe local development workflows where project-specific envir
 - Pester test coverage
 - PSScriptAnalyzer-compatible project layout
 
+## Variable Expansion
+
+DotEnvTools 0.7.0 supports opt-in variable expansion.
+
+Example `.env`:
+
+```dotenv
+HOST=localhost
+PORT=8080
+API_URL=http://${HOST}:${PORT}
+
 ## Repository Layout
 
 ```text

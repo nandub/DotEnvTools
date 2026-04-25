@@ -202,3 +202,50 @@ SHARED_VALUE=development-local
         $env:SHARED_VALUE | Should -Be 'base'
     }
 }
+
+Describe 'DotEnvTools variable expansion' {
+
+    BeforeEach {
+        $script:ExpandRoot = Join-Path $TestDrive 'DotEnvToolsExpandCase'
+        New-Item -Path $script:ExpandRoot -ItemType Directory -Force | Out-Null
+
+@'
+HOST=localhost
+PORT=8080
+API_URL=http://${HOST}:${PORT}
+LITERAL_VALUE=${MISSING_VALUE}
+'@ | Set-Content -Path (Join-Path $script:ExpandRoot '.env') -Encoding UTF8
+
+        Remove-Item Env:\HOST -ErrorAction SilentlyContinue
+        Remove-Item Env:\PORT -ErrorAction SilentlyContinue
+        Remove-Item Env:\API_URL -ErrorAction SilentlyContinue
+        Remove-Item Env:\LITERAL_VALUE -ErrorAction SilentlyContinue
+        Remove-Item Env:\MISSING_VALUE -ErrorAction SilentlyContinue
+    }
+
+    AfterEach {
+        Remove-Item Env:\HOST -ErrorAction SilentlyContinue
+        Remove-Item Env:\PORT -ErrorAction SilentlyContinue
+        Remove-Item Env:\API_URL -ErrorAction SilentlyContinue
+        Remove-Item Env:\LITERAL_VALUE -ErrorAction SilentlyContinue
+        Remove-Item Env:\MISSING_VALUE -ErrorAction SilentlyContinue
+    }
+
+    It 'Does not expand variables by default' {
+        Import-DotEnvFile -Path $script:ExpandRoot -Override | Out-Null
+
+        $env:API_URL | Should -Be 'http://${HOST}:${PORT}'
+    }
+
+    It 'Expands variables when ExpandVariables is used' {
+        Import-DotEnvFile -Path $script:ExpandRoot -Override -ExpandVariables | Out-Null
+
+        $env:API_URL | Should -Be 'http://localhost:8080'
+    }
+
+    It 'Preserves missing variable references' {
+        Import-DotEnvFile -Path $script:ExpandRoot -Override -ExpandVariables | Out-Null
+
+        $env:LITERAL_VALUE | Should -Be '${MISSING_VALUE}'
+    }
+}

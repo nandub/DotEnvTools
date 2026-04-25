@@ -1,6 +1,6 @@
 ﻿@{
     RootModule = 'DotEnvTools.psm1'
-    ModuleVersion = '0.6.0'
+    ModuleVersion = '0.7.0'
     GUID = '4d69b4ea-9d83-4e24-8d6f-6b74c3a6d052'
     Author = 'DotEnvTools Contributors'
     CompanyName = 'Community'
@@ -34,4 +34,15 @@
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
 
