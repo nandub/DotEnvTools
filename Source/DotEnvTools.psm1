@@ -1143,9 +1143,36 @@ Reloads unchanged files when tracked variables are missing.
         try {
             $currentPath = (Get-Location).Path
 
-            if (-not (Test-DotEnvTrustedPath -Path $currentPath -TrustedPath $script:DotEnvState.TrustedPaths -TrustAll:$script:DotEnvState.TrustAll)) {
+            $isTrusted = Test-DotEnvTrustedPath `
+                -Path $currentPath `
+                -TrustedPath $script:DotEnvState.TrustedPaths `
+                -TrustAll:$script:DotEnvState.TrustAll
+
+            if (-not $isTrusted) {
                 Write-Verbose ("Current path is not trusted for .env auto-load: {0}" -f $currentPath)
-                if ($PassThru) { Get-DotEnvAutoLoadState }
+
+                if ($script:DotEnvState.RemoveOnExit) {
+                    $loadedFiles = @($script:DotEnvState.LastLoadedFiles)
+
+                    foreach ($loadedFile in $loadedFiles) {
+                        if (-not [string]::IsNullOrWhiteSpace($loadedFile)) {
+                            if (Test-Path -LiteralPath $loadedFile -PathType Leaf) {
+                                Write-Verbose ("Removing variables because current path is outside trusted path: {0}" -f $loadedFile)
+                                Remove-DotEnvVariable -Path $loadedFile -ErrorAction SilentlyContinue | Out-Null
+                            }
+                        }
+                    }
+
+                    $script:DotEnvState.LastLoadedFiles = @()
+                    $script:DotEnvState.FileHashes.Clear()
+                }
+
+                $script:DotEnvState.LastPath = $currentPath
+
+                if ($PassThru) {
+                    Get-DotEnvAutoLoadState
+                }
+
                 return
             }
 
@@ -1373,12 +1400,23 @@ Windows PowerShell 5.1 compatible.
 
     process {
         if ($PSCmdlet.ShouldProcess('PowerShell prompt', 'Disable .env auto-load')) {
+            $removedCurrent = $false
+
             if ($RemoveCurrent) {
-                foreach ($file in @($script:DotEnvState.LastLoadedFiles)) {
-                    if (Test-Path -LiteralPath $file) {
-                        Remove-DotEnvVariable -Path $file -ErrorAction SilentlyContinue | Out-Null
+                $loadedFiles = @($script:DotEnvState.LastLoadedFiles)
+
+                foreach ($loadedFile in $loadedFiles) {
+                    if (-not [string]::IsNullOrWhiteSpace($loadedFile)) {
+                        if (Test-Path -LiteralPath $loadedFile -PathType Leaf) {
+                            Write-Verbose ("Removing variables from loaded file: {0}" -f $loadedFile)
+                            Remove-DotEnvVariable -Path $loadedFile -ErrorAction SilentlyContinue | Out-Null
+                            $removedCurrent = $true
+                        }
                     }
                 }
+
+                $script:DotEnvState.LastLoadedFiles = @()
+                $script:DotEnvState.FileHashes.Clear()
             }
 
             $script:DotEnvState.AutoLoadEnabled = $false

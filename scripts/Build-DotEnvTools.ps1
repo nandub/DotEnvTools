@@ -39,10 +39,24 @@ process {
         if (-not (Test-Path $modulePath)) { Write-Error "Module file not found: $modulePath"; return }
 
         if ($NewVersion) {
-            if ($PSCmdlet.ShouldProcess($manifestPath, "Update ModuleVersion to $NewVersion")) {
-                $manifestText = Get-Content -Path $manifestPath -Raw
-                $manifestText = $manifestText -replace "ModuleVersion\s*=\s*'[^']+'", "ModuleVersion = '$NewVersion'"
-                Set-Content -Path $manifestPath -Value $manifestText -Encoding UTF8
+            $manifest = Import-PowerShellDataFile -Path $manifestPath
+            $currentVersion = [string]$manifest.ModuleVersion
+            
+            if ($currentVersion -ne $NewVersion) {
+                if ($PSCmdlet.ShouldProcess($manifestPath, "Update ModuleVersion from $currentVersion to $NewVersion")) {
+                    $manifestText = Get-Content -Path $manifestPath -Raw -ErrorAction Stop
+                    $updatedText = $manifestText -replace "ModuleVersion\s*=\s*'[^']+'", "ModuleVersion = '$NewVersion'"
+
+                    if ($updatedText -ne $manifestText) {
+                        [System.IO.File]::WriteAllText(
+                            $manifestPath,
+                            $updatedText,
+                            [System.Text.UTF8Encoding]::new($false)
+                        )
+                    }
+                }
+            } else {
+                Write-Verbose ("ModuleVersion is already {0}; manifest update skipped." -f $NewVersion)
             }
         }
 
