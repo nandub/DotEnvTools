@@ -463,14 +463,14 @@ By default this checks for `.env`, `.env.*`, and `.env.keys`.
 ## Build Deployable Package
 
 ```powershell
-.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.4 -Verbose
+.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.5 -Verbose
 ```
 
 This creates:
 
 ```text
-dist\DotEnvTools\0.8.4\
-dist\DotEnvTools-0.8.4.zip
+dist\DotEnvTools\0.8.5\
+dist\DotEnvTools-0.8.5.zip
 ```
 
 ## Run Quality Checks

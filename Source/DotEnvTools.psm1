@@ -1802,12 +1802,14 @@ Windows PowerShell 5.1 compatible.
                     }
                 }
 
-                foreach ($requiredName in @($Required)) {
-                    if ($requiredName -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') {
-                        [void]$errors.Add("Invalid required key name: $requiredName")
-                    }
-                    elseif ($keys -notcontains $requiredName) {
-                        [void]$warnings.Add("Missing required key: $requiredName")
+                if ($Required -and @($Required).Count -gt 0) {
+                    foreach ($requiredName in @($Required)) {
+                        if ($requiredName -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') {
+                            [void]$errors.Add("Invalid required key name: $requiredName")
+                        }
+                        elseif ($keys -notcontains $requiredName) {
+                            [void]$warnings.Add("Missing required key: $requiredName")
+                        }
                     }
                 }
             }

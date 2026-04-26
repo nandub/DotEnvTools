@@ -12,6 +12,14 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [0.8.5] - 2026-04-25
+
+Internal version commit: pending.
+
+### Fixed
+
+- Fixed `Test-DotEnvFile` so omitting `-Required` does not add an invalid empty required-key error.
+
 ## [0.8.4] - 2026-04-25
 
 Internal version commit: `8f967ec`.

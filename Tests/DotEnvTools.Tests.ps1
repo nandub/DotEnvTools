@@ -191,6 +191,22 @@ API_URL=https://second.example
         ($result.Warnings -join "`n") | Should -Match 'Extra key not present in example: DB_NAME'
     }
 
+    It 'Does not report required key errors when Required is omitted' {
+        $examplePath = Join-Path $script:TestRoot '.env.example'
+        Set-Content -Path $examplePath -Value @(
+            'API_URL='
+            'DB_NAME='
+            'QUOTED_VALUE='
+            'EMPTY_VALUE='
+        ) -Encoding UTF8
+
+        $result = Test-DotEnvFile -Path $script:EnvPath -ExamplePath $examplePath
+
+        $result.IsValid | Should -BeTrue
+        $result.ErrorCount | Should -Be 0
+        ($result.Errors -join "`n") | Should -Not -Match 'Invalid required key name'
+    }
+
     It 'Round-trips exported values with embedded quotes' {
         $exportPath = Join-Path $script:TestRoot '.env.export'
         $env:QUOTED_VALUE = 'hello "world" there'
