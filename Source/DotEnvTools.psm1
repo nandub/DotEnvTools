@@ -179,6 +179,32 @@ function Get-DotEnvQuotedValueEndIndex {
     return -1
 }
 
+function Resolve-DotEnvTargetPath {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path
+    )
+
+    $parentPath = Split-Path -Path $Path -Parent
+    $leafName = Split-Path -Path $Path -Leaf
+
+    if ([string]::IsNullOrWhiteSpace($leafName)) {
+        return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+    }
+
+    if ([string]::IsNullOrWhiteSpace($parentPath)) {
+        $resolvedParent = (Get-Location).ProviderPath
+    }
+    else {
+        $resolvedParent = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($parentPath)
+    }
+
+    Join-Path -Path $resolvedParent -ChildPath $leafName
+}
+
 function Get-DotEnvFilePath {
 <#
 .SYNOPSIS
@@ -954,7 +980,7 @@ Windows PowerShell 5.1 compatible.
 
     process {
         try {
-            $targetPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+            $targetPath = Resolve-DotEnvTargetPath -Path $Path
             if (-not (Test-Path -LiteralPath $targetPath -PathType Leaf)) {
                 if (-not $Force) {
                     Write-Error -Message ("File not found: {0}. Use -Force to create it." -f $targetPath) -Category ObjectNotFound
@@ -1102,7 +1128,7 @@ Windows PowerShell 5.1 compatible.
 
     process {
         try {
-            $targetRoot = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+            $targetRoot = Resolve-DotEnvTargetPath -Path $Path
 
             if (-not (Test-Path -LiteralPath $targetRoot -PathType Container)) {
                 if ($PSCmdlet.ShouldProcess($targetRoot, 'Create project directory')) {
@@ -1922,7 +1948,7 @@ Windows PowerShell 5.1 compatible.
 
     process {
         try {
-            $targetPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+            $targetPath = Resolve-DotEnvTargetPath -Path $Path
 
             if ((Test-Path -LiteralPath $targetPath) -and -not $Force) {
                 Write-Error -Message ("File already exists: {0}. Use -Force to overwrite." -f $targetPath) -Category ResourceExists

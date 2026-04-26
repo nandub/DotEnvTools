@@ -12,6 +12,14 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [0.8.7] - 2026-04-25
+
+Internal version commit: pending.
+
+### Fixed
+
+- Fixed cross-platform writes to new dotenv files on Linux runners by resolving parent directories instead of non-existent target files.
+
 ## [0.8.6] - 2026-04-25
 
 Internal version commit: `59f8c62`.
