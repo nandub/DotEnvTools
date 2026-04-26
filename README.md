@@ -463,14 +463,14 @@ By default this checks for `.env`, `.env.*`, and `.env.keys`.
 ## Build Deployable Package
 
 ```powershell
-.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.7 -Verbose
+.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.8 -Verbose
 ```
 
 This creates:
 
 ```text
-dist\DotEnvTools\0.8.7\
-dist\DotEnvTools-0.8.7.zip
+dist\DotEnvTools\0.8.8\
+dist\DotEnvTools-0.8.8.zip
 ```
 
 ## GitHub Workflows

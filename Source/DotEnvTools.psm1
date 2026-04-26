@@ -1016,7 +1016,7 @@ Windows PowerShell 5.1 compatible.
 
             if ($PSCmdlet.ShouldProcess($targetPath, ("Set dotenv value {0}" -f $Name))) {
                 Set-Content -LiteralPath $targetPath -Value $newLines -Encoding UTF8
-                Get-Item -LiteralPath $targetPath
+                Get-Item -LiteralPath $targetPath -Force
             }
         }
         catch {
@@ -1056,7 +1056,7 @@ Windows PowerShell 5.1 compatible.
 
     process {
         try {
-            $targetPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+            $targetPath = Resolve-DotEnvTargetPath -Path $Path
             if (-not (Test-Path -LiteralPath $targetPath -PathType Leaf)) {
                 Write-Error -Message ("File not found: {0}" -f $targetPath) -Category ObjectNotFound
                 return
@@ -1067,7 +1067,7 @@ Windows PowerShell 5.1 compatible.
 
             if ($PSCmdlet.ShouldProcess($targetPath, ("Remove dotenv value {0}" -f $Name))) {
                 Set-Content -LiteralPath $targetPath -Value $newLines -Encoding UTF8
-                Get-Item -LiteralPath $targetPath
+                Get-Item -LiteralPath $targetPath -Force
             }
         }
         catch {
@@ -1195,7 +1195,7 @@ Windows PowerShell 5.1 compatible.
 
                 if ($PSCmdlet.ShouldProcess($targetPath, 'Create dotenv file')) {
                     Set-Content -LiteralPath $targetPath -Value $lines -Encoding UTF8
-                    Get-Item -LiteralPath $targetPath
+                    Get-Item -LiteralPath $targetPath -Force
                 }
             }
         }
@@ -1975,7 +1975,7 @@ Windows PowerShell 5.1 compatible.
                 }
 
                 Set-Content -LiteralPath $targetPath -Value $lines -Encoding UTF8
-                Get-Item -LiteralPath $targetPath
+                Get-Item -LiteralPath $targetPath -Force
             }
         }
         catch {

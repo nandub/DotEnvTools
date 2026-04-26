@@ -1,6 +1,6 @@
 ﻿@{
     RootModule = 'DotEnvTools.psm1'
-    ModuleVersion = '0.8.7'
+    ModuleVersion = '0.8.8'
     GUID = '4d69b4ea-9d83-4e24-8d6f-6b74c3a6d052'
     Author = 'DotEnvTools Contributors'
     CompanyName = 'Community'
@@ -38,7 +38,7 @@
             Tags = @('dotenv', 'env', 'PowerShell', 'WindowsPowerShell')
             LicenseUri = 'https://github.com/nandub/DotEnvTools/blob/main/LICENSE'
             ProjectUri = 'https://github.com/nandub/DotEnvTools'
-            ReleaseNotes = '0.8.7 fixes cross-platform writes to new dotenv files on Linux runners.'
+            ReleaseNotes = '0.8.8 fixes Linux hidden dotfile return paths after writes.'
         }
     }
 }

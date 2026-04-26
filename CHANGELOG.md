@@ -12,6 +12,15 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [0.8.8] - 2026-04-25
+
+Internal version commit: pending.
+
+### Fixed
+
+- Fixed Linux CI failures where commands wrote hidden `.env*` files successfully but failed when returning `Get-Item` results without `-Force`.
+- Updated `Remove-DotEnvValue` to use the same cross-platform target path resolver as other dotenv file write commands.
+
 ## [0.8.7] - 2026-04-25
 
 Internal version commit: `cceffa8`.
