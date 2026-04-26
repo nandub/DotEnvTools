@@ -221,6 +221,28 @@ API_URL=https://second.example
         Get-DotEnvValue -Path $script:EnvPath -Name NEW_VALUE | Should -BeNullOrEmpty
     }
 
+    It 'Creates starter dotenv and example files' {
+        $projectRoot = Join-Path $script:TestRoot 'NewProject'
+
+        $files = @(New-DotEnvFile -Path $projectRoot -Name API_URL,DB_NAME)
+
+        @($files).Count | Should -Be 2
+        Test-Path (Join-Path $projectRoot '.env') | Should -BeTrue
+        Test-Path (Join-Path $projectRoot '.env.example') | Should -BeTrue
+        Get-DotEnvValue -Path (Join-Path $projectRoot '.env.example') -Name API_URL | Should -Be ''
+    }
+
+    It 'Creates layered starter dotenv files' {
+        $projectRoot = Join-Path $script:TestRoot 'LayeredNewProject'
+
+        $files = @(New-DotEnvFile -Path $projectRoot -Name API_URL -IncludeVariants -EnvironmentName development)
+
+        @($files).Count | Should -Be 5
+        Test-Path (Join-Path $projectRoot '.env.local') | Should -BeTrue
+        Test-Path (Join-Path $projectRoot '.env.development') | Should -BeTrue
+        Test-Path (Join-Path $projectRoot '.env.development.local') | Should -BeTrue
+    }
+
     It 'Runs commands with temporary dotenv variables' {
         $powerShellPath = (Get-Process -Id $PID).Path
         $output = Invoke-DotEnvCommand `

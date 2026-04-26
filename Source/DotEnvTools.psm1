@@ -992,6 +992,135 @@ Windows PowerShell 5.1 compatible.
     }
 }
 
+function New-DotEnvFile {
+<#
+.SYNOPSIS
+Creates starter dotenv files for a project.
+.DESCRIPTION
+Creates `.env`, `.env.example`, and optionally layered dotenv files in a target
+directory. Existing files are preserved unless -Force is used.
+.PARAMETER Path
+Target project directory.
+.PARAMETER Name
+Variable names to include in generated files.
+.PARAMETER EnvironmentName
+Optional environment suffix used for generated layer names.
+.PARAMETER IncludeVariants
+Creates `.env.local`, `.env.<EnvironmentName>`, and `.env.<EnvironmentName>.local`.
+.PARAMETER ExampleOnly
+Creates only `.env.example`.
+.PARAMETER Force
+Overwrites existing target files.
+.EXAMPLE
+New-DotEnvFile -Path . -Name API_URL,DB_NAME
+.EXAMPLE
+New-DotEnvFile -Path . -Name API_URL,DB_NAME -IncludeVariants -EnvironmentName development
+.NOTES
+Windows PowerShell 5.1 compatible.
+#>
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([System.IO.FileInfo])]
+    param(
+        [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path = '.',
+
+        [Parameter(Mandatory = $false)]
+        [ValidatePattern('^[A-Za-z_][A-Za-z0-9_]*$')]
+        [string[]]$Name = @('API_URL', 'DB_NAME'),
+
+        [Parameter(Mandatory = $false)]
+        [string]$EnvironmentName = 'development',
+
+        [Parameter(Mandatory = $false)]
+        [switch]$IncludeVariants,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$ExampleOnly,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$Force
+    )
+
+    process {
+        try {
+            $targetRoot = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+
+            if (-not (Test-Path -LiteralPath $targetRoot -PathType Container)) {
+                if ($PSCmdlet.ShouldProcess($targetRoot, 'Create project directory')) {
+                    New-Item -Path $targetRoot -ItemType Directory -Force | Out-Null
+                }
+            }
+
+            $uniqueNames = @($Name | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
+            if (@($uniqueNames).Count -eq 0) {
+                $uniqueNames = @('API_URL', 'DB_NAME')
+            }
+
+            $files = New-Object System.Collections.ArrayList
+            [void]$files.Add('.env.example')
+
+            if (-not $ExampleOnly) {
+                [void]$files.Add('.env')
+
+                if ($IncludeVariants) {
+                    [void]$files.Add('.env.local')
+
+                    if (-not [string]::IsNullOrWhiteSpace($EnvironmentName)) {
+                        [void]$files.Add(('.env.{0}' -f $EnvironmentName))
+                        [void]$files.Add(('.env.{0}.local' -f $EnvironmentName))
+                    }
+                }
+            }
+
+            foreach ($fileName in $files) {
+                $targetPath = Join-Path $targetRoot $fileName
+
+                if ((Test-Path -LiteralPath $targetPath -PathType Leaf) -and -not $Force) {
+                    Write-Error -Message ("File already exists: {0}. Use -Force to overwrite." -f $targetPath) -Category ResourceExists
+                    continue
+                }
+
+                $lines = New-Object System.Collections.ArrayList
+                [void]$lines.Add(("# {0}" -f $fileName))
+
+                if ($fileName -eq '.env.example') {
+                    [void]$lines.Add('# Commit this template with safe placeholder values.')
+                    foreach ($variableName in $uniqueNames) {
+                        [void]$lines.Add(('{0}=' -f $variableName))
+                    }
+                }
+                elseif ($fileName -like '*.local') {
+                    [void]$lines.Add('# Local machine overrides. Do not commit real secrets.')
+                    foreach ($variableName in $uniqueNames) {
+                        [void]$lines.Add(('# {0}=' -f $variableName))
+                    }
+                }
+                elseif ($fileName -ne '.env') {
+                    [void]$lines.Add(("# {0} environment values." -f $EnvironmentName))
+                    foreach ($variableName in $uniqueNames) {
+                        [void]$lines.Add(('{0}=' -f $variableName))
+                    }
+                }
+                else {
+                    [void]$lines.Add('# Project defaults. Do not commit real secrets.')
+                    foreach ($variableName in $uniqueNames) {
+                        [void]$lines.Add(('{0}=' -f $variableName))
+                    }
+                }
+
+                if ($PSCmdlet.ShouldProcess($targetPath, 'Create dotenv file')) {
+                    Set-Content -LiteralPath $targetPath -Value $lines -Encoding UTF8
+                    Get-Item -LiteralPath $targetPath
+                }
+            }
+        }
+        catch {
+            Write-Error -Message ("Failed to create dotenv files. {0}" -f $_.Exception.Message) -Category WriteError
+        }
+    }
+}
+
 function Import-DotEnvFile {
 <#
 .SYNOPSIS

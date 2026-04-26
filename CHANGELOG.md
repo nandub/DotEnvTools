@@ -12,6 +12,19 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [0.8.3] - 2026-04-25
+
+Internal version commit: pending.
+
+### Added
+
+- Added `New-DotEnvFile` to create `.env`, `.env.example`, and optional layered dotenv starter files for new projects.
+- Added a repository `.env.example` template for local smoke testing.
+
+### Changed
+
+- Updated `.gitignore` to keep ignoring real `.env*` files while allowing `.env.example` templates.
+
 ## [0.8.2] - 2026-04-25
 
 Internal version commit: `336a948`.

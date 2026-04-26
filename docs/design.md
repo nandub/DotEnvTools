@@ -7,6 +7,7 @@ DotEnvTools is intentionally conservative:
 - Existing environment variables are preserved unless `-Override` is used.
 - Auto-load is opt-in and should normally use `-TrustedPath`.
 - Auto-load uses prompt wrapping because Windows PowerShell 5.1 has no native directory-change event hook.
+- `.env.example` templates are safe to commit; real `.env*` files remain ignored by default.
 
 ## Parser scope
 

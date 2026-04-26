@@ -21,6 +21,7 @@ It is designed for safe local development workflows where project-specific envir
 - Search parent directories for dotenv files
 - Check `.gitignore` hygiene for dotenv secret files
 - Reload unchanged `.env` files when tracked variables are missing
+- Create starter dotenv files for new projects
 - Layered dotenv loading:
   - `.env`
   - `.env.local`
@@ -66,6 +67,12 @@ Validate a file before importing it:
 Test-DotEnvFile -Path .\.env -ExamplePath .\.env.example
 ```
 
+Create starter dotenv files:
+
+```powershell
+New-DotEnvFile -Path . -Name API_URL,DB_NAME
+```
+
 Auto-load trusted project directories:
 
 ```powershell
@@ -104,6 +111,36 @@ Remove-DotEnvVariable -Path .\.env -Verbose
 ```
 
 `Remove-DotEnvVariable` only removes or restores variables that DotEnvTools previously loaded. Existing variables skipped by the default no-clobber behavior are left unchanged.
+
+## Create Starter Files
+
+Create `.env` and `.env.example`:
+
+```powershell
+New-DotEnvFile -Path . -Name API_URL,DB_NAME
+```
+
+Create layered starter files:
+
+```powershell
+New-DotEnvFile `
+    -Path . `
+    -Name API_URL,DB_NAME `
+    -IncludeVariants `
+    -EnvironmentName development
+```
+
+This creates:
+
+```text
+.env.example
+.env
+.env.local
+.env.development
+.env.development.local
+```
+
+Existing files are preserved unless `-Force` is used.
 
 ## Override Behavior
 
@@ -426,14 +463,14 @@ By default this checks for `.env`, `.env.*`, and `.env.keys`.
 ## Build Deployable Package
 
 ```powershell
-.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.2 -Verbose
+.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.3 -Verbose
 ```
 
 This creates:
 
 ```text
-dist\DotEnvTools\0.8.2\
-dist\DotEnvTools-0.8.2.zip
+dist\DotEnvTools\0.8.3\
+dist\DotEnvTools-0.8.3.zip
 ```
 
 ## Run Quality Checks
@@ -506,6 +543,7 @@ Get-DotEnvValue
 Import-DotEnvFile
 Invoke-DotEnvCommand
 Invoke-DotEnvAutoLoadNow
+New-DotEnvFile
 Read-DotEnvMap
 Read-DotEnvFile
 Remove-DotEnvAutoLoadProfile
