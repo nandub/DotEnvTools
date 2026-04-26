@@ -1,6 +1,6 @@
 ﻿@{
     RootModule = 'DotEnvTools.psm1'
-    ModuleVersion = '0.8.5'
+    ModuleVersion = '0.8.6'
     GUID = '4d69b4ea-9d83-4e24-8d6f-6b74c3a6d052'
     Author = 'DotEnvTools Contributors'
     CompanyName = 'Community'
@@ -36,9 +36,9 @@
     PrivateData = @{
         PSData = @{
             Tags = @('dotenv', 'env', 'PowerShell', 'WindowsPowerShell')
-            LicenseUri = ''
-            ProjectUri = ''
-            ReleaseNotes = '0.8.5 fixes Test-DotEnvFile validation when -Required is omitted.'
+            LicenseUri = 'https://github.com/nandub/DotEnvTools/blob/main/LICENSE'
+            ProjectUri = 'https://github.com/nandub/DotEnvTools'
+            ReleaseNotes = '0.8.6 adds GitHub metadata and CI workflow support.'
         }
     }
 }

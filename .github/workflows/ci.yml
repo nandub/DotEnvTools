@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test, analyze, and build
+    runs-on: ubuntu-latest
+
+    env:
+      MODULE_NAME: DotEnvTools
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install quality dependencies
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+
+          if (-not (Get-Module -ListAvailable -Name Pester)) {
+              Install-Module -Name Pester -Scope CurrentUser -Force -SkipPublisherCheck
+          }
+
+          if (-not (Get-Module -ListAvailable -Name PSScriptAnalyzer)) {
+              Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -Force
+          }
+
+      - name: Run quality checks
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          ./scripts/Test-DotEnvToolsQuality.ps1 `
+              -ModuleRoot . `
+              -RunTests `
+              -RunAnalyzer `
+              -Verbose
+
+      - name: Resolve module version
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $manifest = Import-PowerShellDataFile -Path "./Source/$env:MODULE_NAME.psd1"
+          $moduleVersion = [string]$manifest.ModuleVersion
+
+          if ([string]::IsNullOrWhiteSpace($moduleVersion)) {
+              Write-Error 'ModuleVersion is empty.'
+          }
+
+          "MODULE_VERSION=$moduleVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Resolved module version: $moduleVersion"
+
+      - name: Build module
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          ./scripts/Build-DotEnvTools.ps1 -NewVersion $env:MODULE_VERSION -Verbose
+
+      - name: Smoke import built module
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $builtModulePath = Join-Path -Path $PWD -ChildPath "dist/$env:MODULE_NAME/$env:MODULE_VERSION"
+          $manifestPath = Join-Path -Path $builtModulePath -ChildPath "$env:MODULE_NAME.psd1"
+
+          if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
+              Write-Error "Built module manifest was not found: $manifestPath"
+          }
+
+          Import-Module $manifestPath -Force -ErrorAction Stop
+
+          $module = Get-Module -Name $env:MODULE_NAME
+          if ($null -eq $module) {
+              Write-Error "Module '$env:MODULE_NAME' was not imported."
+          }
+
+          if ([string]$module.Version -ne $env:MODULE_VERSION) {
+              Write-Error "Imported module version '$($module.Version)' does not match expected '$env:MODULE_VERSION'."
+          }
+
+          $commandCount = @(Get-Command -Module $env:MODULE_NAME).Count
+          if ($commandCount -lt 1) {
+              Write-Error 'No commands were exported by the built module.'
+          }
+
+          Write-Host "Imported $env:MODULE_NAME $($module.Version) with $commandCount exported commands."

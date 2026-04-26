@@ -1,0 +1,164 @@
+name: Publish DotEnvTools to GitHub Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Module version to publish, for example 0.8.5'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Build, test, and publish DotEnvTools
+    runs-on: ubuntu-latest
+
+    env:
+      MODULE_NAME: DotEnvTools
+      REPOSITORY_NAME: GitHubPackages
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Resolve release version from input
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $moduleVersion = '${{ inputs.version }}'
+
+          if ($moduleVersion -notmatch '^\d+\.\d+\.\d+(\.\d+)?$') {
+              Write-Error "Invalid version '$moduleVersion'. Expected versions like 0.8.5 or 0.8.5.0."
+          }
+
+          "MODULE_VERSION=$moduleVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+          Write-Host "Resolved module version: $moduleVersion"
+
+      - name: Install quality dependencies
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+
+          if (-not (Get-Module -ListAvailable -Name Pester)) {
+              Install-Module -Name Pester -Scope CurrentUser -Force -SkipPublisherCheck
+          }
+
+          if (-not (Get-Module -ListAvailable -Name PSScriptAnalyzer)) {
+              Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -Force
+          }
+
+      - name: Run quality checks
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $qualityScriptPath = Join-Path -Path $PWD -ChildPath 'scripts/Test-DotEnvToolsQuality.ps1'
+
+          if (-not (Test-Path -LiteralPath $qualityScriptPath -PathType Leaf)) {
+              Write-Error "Quality script was not found: $qualityScriptPath"
+          }
+
+          & $qualityScriptPath `
+              -ModuleRoot . `
+              -RunTests `
+              -RunAnalyzer `
+              -Verbose
+
+      - name: Build module
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $buildScriptPath = Join-Path -Path $PWD -ChildPath 'scripts/Build-DotEnvTools.ps1'
+
+          if (-not (Test-Path -LiteralPath $buildScriptPath -PathType Leaf)) {
+              Write-Error "Build script was not found: $buildScriptPath"
+          }
+
+          & $buildScriptPath -NewVersion $env:MODULE_VERSION -Verbose
+
+      - name: Validate built module
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $moduleName = $env:MODULE_NAME
+          $moduleVersion = $env:MODULE_VERSION
+
+          $builtModulePath = Join-Path -Path $PWD -ChildPath "dist/$moduleName/$moduleVersion"
+          $manifestPath = Join-Path -Path $builtModulePath -ChildPath "$moduleName.psd1"
+          $moduleFilePath = Join-Path -Path $builtModulePath -ChildPath "$moduleName.psm1"
+
+          if (-not (Test-Path -LiteralPath $builtModulePath -PathType Container)) {
+              Write-Error "Built module folder was not found: $builtModulePath"
+          }
+
+          if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
+              Write-Error "Built module manifest was not found: $manifestPath"
+          }
+
+          if (-not (Test-Path -LiteralPath $moduleFilePath -PathType Leaf)) {
+              Write-Error "Built module file was not found: $moduleFilePath"
+          }
+
+          $manifest = Import-PowerShellDataFile -Path $manifestPath
+          $manifestVersion = [string]$manifest.ModuleVersion
+
+          if ($manifestVersion -ne $moduleVersion) {
+              Write-Error "Built manifest version '$manifestVersion' does not match tag version '$moduleVersion'."
+          }
+
+          "BUILT_MODULE_PATH=$builtModulePath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+          Write-Host "Validated built module: $builtModulePath"
+
+      - name: Register GitHub Packages repository
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $owner = $env:GITHUB_REPOSITORY_OWNER
+          $repositoryName = $env:REPOSITORY_NAME
+          $feedUrl = "https://nuget.pkg.github.com/$owner/index.json"
+
+          $secureToken = ConvertTo-SecureString -String $env:GITHUB_TOKEN -AsPlainText -Force
+          $credential = New-Object System.Management.Automation.PSCredential($owner, $secureToken)
+
+          $existingRepository = Get-PSRepository -Name $repositoryName -ErrorAction SilentlyContinue
+
+          if ($null -ne $existingRepository) {
+              Unregister-PSRepository -Name $repositoryName
+          }
+
+          Register-PSRepository `
+              -Name $repositoryName `
+              -SourceLocation $feedUrl `
+              -PublishLocation $feedUrl `
+              -InstallationPolicy Trusted `
+              -Credential $credential
+
+          Get-PSRepository -Name $repositoryName
+
+      - name: Publish module
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          Publish-Module `
+              -Path $env:BUILT_MODULE_PATH `
+              -Repository $env:REPOSITORY_NAME `
+              -NuGetApiKey $env:GITHUB_TOKEN `
+              -Force `
+              -Verbose

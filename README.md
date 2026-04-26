@@ -463,15 +463,21 @@ By default this checks for `.env`, `.env.*`, and `.env.keys`.
 ## Build Deployable Package
 
 ```powershell
-.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.5 -Verbose
+.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.6 -Verbose
 ```
 
 This creates:
 
 ```text
-dist\DotEnvTools\0.8.5\
-dist\DotEnvTools-0.8.5.zip
+dist\DotEnvTools\0.8.6\
+dist\DotEnvTools-0.8.6.zip
 ```
+
+## GitHub Workflows
+
+The repository includes a CI workflow that runs on pushes and pull requests to `main`. It runs quality checks, builds the module, and smoke imports the built package.
+
+Publishing to GitHub Packages is configured as a manual workflow. Use it only when you are ready to publish a specific version.
 
 ## Run Quality Checks
 
