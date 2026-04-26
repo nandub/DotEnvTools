@@ -188,10 +188,7 @@ Resolves .env file paths in deterministic load order.
 Returns existing .env files from either a direct .env file path or a directory path.
 When -IncludeVariants is used, variant files are returned in precedence order:
 
-.env
-.env.local
-.env.<EnvironmentName>
-.env.<EnvironmentName>.local
+`.env`, `.env.local`, `.env.<EnvironmentName>`, and `.env.<EnvironmentName>.local`.
 
 Only existing files are returned.
 
@@ -204,11 +201,17 @@ Includes supported .env variant files.
 .PARAMETER EnvironmentName
 Optional environment name, such as development, test, staging, or production.
 
+.PARAMETER SearchUp
+Searches parent directories for dotenv files and returns parent files before child files.
+
 .EXAMPLE
 Get-DotEnvFilePath -Path .\
 
 .EXAMPLE
 Get-DotEnvFilePath -Path .\ -IncludeVariants -EnvironmentName development
+
+.EXAMPLE
+Get-DotEnvFilePath -Path .\src -SearchUp
 
 .INPUTS
 System.String
@@ -306,7 +309,7 @@ Windows PowerShell 5.1 compatible.
 }
 
 function Test-DotEnvTrustedPath {
-<#!
+<#
 .SYNOPSIS
 Tests whether a path is trusted for auto-loading.
 .DESCRIPTION
@@ -776,8 +779,29 @@ function Get-DotEnvValue {
 <#
 .SYNOPSIS
 Gets one dotenv value without modifying the process environment.
+.DESCRIPTION
+Reads resolved dotenv files and returns the value for a single key. This command
+does not write to the process environment.
+.PARAMETER Path
+Path to a .env file or directory.
+.PARAMETER Name
+Variable name to return.
+.PARAMETER IncludeVariants
+Includes supported variant files.
+.PARAMETER EnvironmentName
+Optional environment suffix used with variant files.
+.PARAMETER SearchUp
+Searches parent directories for dotenv files.
+.PARAMETER Strict
+Enables strict parsing.
+.PARAMETER ExpandVariables
+Expands variable references before returning the value.
 .EXAMPLE
 Get-DotEnvValue -Path .\.env -Name API_URL
+.EXAMPLE
+Get-DotEnvValue -Path . -Name API_URL -IncludeVariants -EnvironmentName development -ExpandVariables
+.OUTPUTS
+System.String
 .NOTES
 Windows PowerShell 5.1 compatible.
 #>
@@ -828,8 +852,19 @@ function Find-DotEnvFile {
 <#
 .SYNOPSIS
 Finds dotenv files in the current or parent directories.
+.DESCRIPTION
+Searches upward from a directory and returns matching dotenv files in deterministic
+load order.
+.PARAMETER Path
+Starting directory for the search.
+.PARAMETER IncludeVariants
+Includes supported variant files.
+.PARAMETER EnvironmentName
+Optional environment suffix used with variant files.
 .EXAMPLE
 Find-DotEnvFile -Path . -IncludeVariants -EnvironmentName development
+.OUTPUTS
+System.String
 .NOTES
 Windows PowerShell 5.1 compatible.
 #>
@@ -878,8 +913,23 @@ function Set-DotEnvValue {
 <#
 .SYNOPSIS
 Adds or updates a key in a dotenv file.
+.DESCRIPTION
+Writes a key/value pair to a dotenv file. Existing matching keys are replaced;
+unrelated lines and comments are preserved.
+.PARAMETER Path
+Path to the dotenv file.
+.PARAMETER Name
+Variable name to add or update.
+.PARAMETER Value
+Value to write.
+.PARAMETER Force
+Creates the file if missing.
 .EXAMPLE
 Set-DotEnvValue -Path .\.env -Name API_URL -Value https://localhost:8443
+.EXAMPLE
+Set-DotEnvValue -Path .\.env -Name API_URL -Value https://localhost:8443 -Force
+.OUTPUTS
+System.IO.FileInfo
 .NOTES
 Windows PowerShell 5.1 compatible.
 #>
@@ -953,8 +1003,16 @@ function Remove-DotEnvValue {
 <#
 .SYNOPSIS
 Removes a key from a dotenv file.
+.DESCRIPTION
+Removes matching key assignments from a dotenv file. Other lines are preserved.
+.PARAMETER Path
+Path to the dotenv file.
+.PARAMETER Name
+Variable name to remove.
 .EXAMPLE
 Remove-DotEnvValue -Path .\.env -Name API_URL
+.OUTPUTS
+System.IO.FileInfo
 .NOTES
 Windows PowerShell 5.1 compatible.
 #>
@@ -1370,8 +1428,28 @@ Path to a .env file or directory.
 Command to invoke.
 .PARAMETER ArgumentList
 Arguments passed to the command.
+.PARAMETER Override
+Temporarily overwrites existing process variables while the command runs.
+.PARAMETER NoClobber
+Preserves existing process variables while the command runs. This is the default.
+.PARAMETER IncludeVariants
+Includes supported variant files.
+.PARAMETER EnvironmentName
+Optional environment suffix used with variant files.
+.PARAMETER SearchUp
+Searches parent directories for dotenv files.
+.PARAMETER Strict
+Enables strict parsing.
+.PARAMETER ExpandVariables
+Expands variable references before running the command.
+.PARAMETER PassThru
+Returns command metadata after invocation.
 .EXAMPLE
 Invoke-DotEnvCommand -Path .\.env -Command npm -ArgumentList @('test')
+.EXAMPLE
+Invoke-DotEnvCommand -Path . -Command npm -ArgumentList @('test') -IncludeVariants -EnvironmentName development -Override
+.OUTPUTS
+System.Management.Automation.PSCustomObject
 .NOTES
 Windows PowerShell 5.1 compatible.
 #>
@@ -1643,7 +1721,7 @@ Windows PowerShell 5.1 compatible.
 }
 
 function Test-DotEnvFile {
-<#!
+<#
 .SYNOPSIS
 Validates .env file syntax and optional .env.example coverage.
 .DESCRIPTION
@@ -1652,10 +1730,16 @@ Parses a .env file in strict mode and optionally verifies that keys from an exam
 Path to .env file.
 .PARAMETER ExamplePath
 Optional .env.example path.
+.PARAMETER Required
+Specific variable names expected in the dotenv file.
+.PARAMETER RequireNoExtraKeys
+Warns when the dotenv file contains keys that are not present in the example file.
 .EXAMPLE
 Test-DotEnvFile -Path .\.env -WhatIf
 .EXAMPLE
 Test-DotEnvFile -Path .\.env -ExamplePath .\.env.example
+.EXAMPLE
+Test-DotEnvFile -Path .\.env -ExamplePath .\.env.example -Required API_URL,DB_NAME -RequireNoExtraKeys
 .INPUTS
 System.String
 .OUTPUTS
@@ -1798,7 +1882,7 @@ Windows PowerShell 5.1 compatible.
 }
 
 function Export-DotEnvFile {
-<#!
+<#
 .SYNOPSIS
 Exports selected process environment variables to a .env file.
 .DESCRIPTION
@@ -1873,7 +1957,7 @@ Windows PowerShell 5.1 compatible.
 }
 
 function Get-DotEnvAutoLoadState {
-<#!
+<#
 .SYNOPSIS
 Gets DotEnvTools auto-load state.
 .DESCRIPTION
@@ -1912,7 +1996,7 @@ Windows PowerShell 5.1 compatible.
 }
 
 function Invoke-DotEnvAutoLoadNow {
-<#!
+<#
 .SYNOPSIS
 Runs the DotEnvTools auto-load check for the current directory immediately.
 .DESCRIPTION
@@ -2062,7 +2146,7 @@ Reloads unchanged files when tracked variables are missing.
 }
 
 function Enable-DotEnvAutoLoad {
-<#!
+<#
 .SYNOPSIS
 Enables automatic .env loading for trusted directories.
 .DESCRIPTION
@@ -2177,7 +2261,7 @@ Auto-load is opt-in. Windows PowerShell 5.1 compatible.
 }
 
 function Disable-DotEnvAutoLoad {
-<#!
+<#
 .SYNOPSIS
 Disables DotEnvTools automatic .env loading.
 .DESCRIPTION
@@ -2239,7 +2323,7 @@ Windows PowerShell 5.1 compatible.
 }
 
 function Add-DotEnvAutoLoadProfile {
-<#!
+<#
 .SYNOPSIS
 Adds DotEnvTools auto-load initialization to the current user's profile.
 .DESCRIPTION
@@ -2300,7 +2384,7 @@ Windows PowerShell 5.1 compatible.
 }
 
 function Remove-DotEnvAutoLoadProfile {
-<#!
+<#
 .SYNOPSIS
 Removes DotEnvTools auto-load lines from the current user's profile.
 .DESCRIPTION

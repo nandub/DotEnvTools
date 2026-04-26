@@ -12,6 +12,15 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [0.8.4] - 2026-04-25
+
+Internal version commit: pending.
+
+### Documentation
+
+- Normalized comment-based help blocks so all exported commands surface synopsis and parameter help through `Get-Help`.
+- Expanded help coverage for newer public commands and validation options.
+
 ## [0.8.3] - 2026-04-25
 
 Internal version commit: `19e825a`.

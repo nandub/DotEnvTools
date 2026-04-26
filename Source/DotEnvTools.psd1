@@ -1,6 +1,6 @@
 ﻿@{
     RootModule = 'DotEnvTools.psm1'
-    ModuleVersion = '0.8.3'
+    ModuleVersion = '0.8.4'
     GUID = '4d69b4ea-9d83-4e24-8d6f-6b74c3a6d052'
     Author = 'DotEnvTools Contributors'
     CompanyName = 'Community'
@@ -38,7 +38,7 @@
             Tags = @('dotenv', 'env', 'PowerShell', 'WindowsPowerShell')
             LicenseUri = ''
             ProjectUri = ''
-            ReleaseNotes = '0.8.3 adds New-DotEnvFile project bootstrap support and a committed .env.example template.'
+            ReleaseNotes = '0.8.4 normalizes comment-based help parsing and expands help coverage for newer public commands.'
         }
     }
 }
