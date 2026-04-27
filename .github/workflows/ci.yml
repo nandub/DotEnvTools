@@ -112,7 +112,7 @@ jobs:
           New-Item -Path $testRoot -ItemType Directory -Force | Out-Null
 
           try {
-              New-DotEnvFile -Path $testRoot -Name API_URL,DB_NAME -Force | Out-Null
+              Initialize-DotEnvProject -Path $testRoot -Name API_URL,DB_NAME -Force | Out-Null
 
               $envPath = Join-Path -Path $testRoot -ChildPath '.env'
               $examplePath = Join-Path -Path $testRoot -ChildPath '.env.example'
