@@ -14,7 +14,7 @@ This project follows a pragmatic versioning approach:
 
 ## [0.8.11] - 2026-04-27
 
-Internal version commit: pending.
+Internal version commit: `ce01fef`.
 
 ### Added
 
