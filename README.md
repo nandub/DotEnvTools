@@ -463,14 +463,14 @@ By default this checks for `.env`, `.env.*`, and `.env.keys`.
 ## Build Deployable Package
 
 ```powershell
-.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.12 -Verbose
+.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.13 -Verbose
 ```
 
 This creates:
 
 ```text
-dist\DotEnvTools\0.8.12\
-dist\DotEnvTools-0.8.12.zip
+dist\DotEnvTools\0.8.13\
+dist\DotEnvTools-0.8.13.zip
 ```
 
 ## GitHub Workflows
@@ -479,7 +479,7 @@ The repository includes a CI workflow that runs on pushes and pull requests to `
 
 Pre-1.0 ZIP artifacts should be distributed through GitHub Releases when needed. PowerShell Gallery is the intended public publishing target once the module is ready for broader use. GitHub Packages is optional and remains configured as a manual workflow for repository-scoped package-feed testing.
 
-See `docs\release-process.md` for the release policy.
+See `docs\release-process.md` for the release policy and `docs\1.0-readiness.md` for the stable-release checklist.
 
 ## Run Quality Checks
 
@@ -511,6 +511,7 @@ DotEnvTools\
     en-US\
       DotEnvTools-help.xml
   docs\
+    1.0-readiness.md
     release-process.md
     reference\
       *.md

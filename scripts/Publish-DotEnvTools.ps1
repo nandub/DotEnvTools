@@ -1,10 +1,13 @@
 <#
 .SYNOPSIS
-Publishes DotEnvTools to PowerShell Gallery.
+Publishes a stable DotEnvTools release to PowerShell Gallery.
 
 .DESCRIPTION
 Builds the requested DotEnvTools version if needed, validates the module manifest,
 and publishes the versioned module package to PowerShell Gallery.
+
+Use this script only when the module is ready for public publishing. Pre-1.0 ZIP
+artifacts should be distributed through GitHub Releases instead.
 
 The PowerShell Gallery API key must be supplied through the current process
 environment variable PSGALLERY_API_KEY.
@@ -14,11 +17,11 @@ The module version to build and publish.
 
 .EXAMPLE
 $env:PSGALLERY_API_KEY = '<api-key>'
-.\scripts\Publish-DotEnvTools.ps1 -NewVersion 0.7.0 -WhatIf
+.\scripts\Publish-DotEnvTools.ps1 -NewVersion 1.0.0 -WhatIf
 
 .EXAMPLE
 $env:PSGALLERY_API_KEY = '<api-key>'
-.\scripts\Publish-DotEnvTools.ps1 -NewVersion 0.7.0 -Verbose
+.\scripts\Publish-DotEnvTools.ps1 -NewVersion 1.0.0 -Verbose
 
 .INPUTS
 None.

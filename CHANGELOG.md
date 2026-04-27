@@ -12,6 +12,15 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [0.8.13] - 2026-04-27
+
+Internal version commit: pending.
+
+### Documentation
+
+- Added `docs/1.0-readiness.md` to track public API, compatibility, documentation, packaging, and publishing gates before `1.0.0`.
+- Clarified that `scripts/Publish-DotEnvTools.ps1` is for stable PowerShell Gallery publishing, not pre-1.0 ZIP distribution.
+
 ## [0.8.12] - 2026-04-27
 
 Internal version commit: `23fa56a`.
