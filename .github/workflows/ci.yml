@@ -14,8 +14,16 @@ permissions:
 
 jobs:
   test:
-    name: Test, analyze, and build
-    runs-on: ubuntu-latest
+    name: Test, analyze, and build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
 
     env:
       MODULE_NAME: DotEnvTools
@@ -100,4 +108,30 @@ jobs:
               Write-Error 'No commands were exported by the built module.'
           }
 
-          Write-Host "Imported $env:MODULE_NAME $($module.Version) with $commandCount exported commands."
+          $testRoot = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "DotEnvTools-CI-$([guid]::NewGuid().ToString('N'))"
+          New-Item -Path $testRoot -ItemType Directory -Force | Out-Null
+
+          try {
+              New-DotEnvFile -Path $testRoot -Name API_URL,DB_NAME -Force | Out-Null
+
+              $envPath = Join-Path -Path $testRoot -ChildPath '.env'
+              $examplePath = Join-Path -Path $testRoot -ChildPath '.env.example'
+
+              Set-DotEnvValue -Path $envPath -Name API_URL -Value 'https://localhost:8443' | Out-Null
+              Set-DotEnvValue -Path $envPath -Name DB_NAME -Value 'DotEnvDemo' | Out-Null
+
+              $validation = Test-DotEnvFile -Path $envPath -ExamplePath $examplePath
+              if (-not $validation.IsValid) {
+                  Write-Error "Generated dotenv files failed validation: $($validation.Errors -join '; ')"
+              }
+
+              $value = Get-DotEnvValue -Path $envPath -Name API_URL
+              if ($value -ne 'https://localhost:8443') {
+                  Write-Error "Unexpected API_URL value: $value"
+              }
+          }
+          finally {
+              Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
+          }
+
+          Write-Host "Imported $env:MODULE_NAME $($module.Version) with $commandCount exported commands on $env:RUNNER_OS."

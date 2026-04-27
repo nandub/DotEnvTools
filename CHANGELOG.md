@@ -12,6 +12,14 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [0.8.9] - 2026-04-27
+
+Internal version commit: pending.
+
+### Changed
+
+- Expanded GitHub CI to run quality checks, build validation, and built-module smoke tests on Ubuntu, Windows, and macOS.
+
 ## [0.8.8] - 2026-04-25
 
 Internal version commit: `e30121a`.
