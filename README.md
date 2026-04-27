@@ -463,14 +463,14 @@ By default this checks for `.env`, `.env.*`, and `.env.keys`.
 ## Build Deployable Package
 
 ```powershell
-.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.10 -Verbose
+.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.11 -Verbose
 ```
 
 This creates:
 
 ```text
-dist\DotEnvTools\0.8.10\
-dist\DotEnvTools-0.8.10.zip
+dist\DotEnvTools\0.8.11\
+dist\DotEnvTools-0.8.11.zip
 ```
 
 ## GitHub Workflows
@@ -508,11 +508,15 @@ DotEnvTools\
     DotEnvTools.psm1
     en-US\
       DotEnvTools-help.xml
+  docs\
+    reference\
+      *.md
   Tests\
     DotEnvTools.Tests.ps1
   scripts\
     Build-DotEnvTools.ps1
     Test-DotEnvToolsQuality.ps1
+    Update-DotEnvToolsHelp.ps1
   CHANGELOG.md
   LICENSE
   PSScriptAnalyzerSettings.psd1
@@ -575,9 +579,16 @@ Update `FunctionsToExport` in the manifest when adding or removing public comman
 
 ## Help Authoring
 
-DotEnvTools currently uses comment-based help in `Source\DotEnvTools.psm1` as the source of truth for command help. This keeps help close to the implementation while the public API is still moving.
+DotEnvTools uses PlatyPS Markdown help in `docs\reference` as the reviewed source for external command help. The generated MAML file is committed at `Source\en-US\DotEnvTools-help.xml` and included in packaged builds.
 
-If external MAML help is needed later, generate it from Markdown using a tool such as PlatyPS, commit the generated `Source\en-US\DotEnvTools-help.xml`, and keep the Markdown source reviewed alongside code changes. Do not maintain generated MAML by hand.
+Regenerate help after public command help changes:
+
+```powershell
+Install-Module platyPS -Scope CurrentUser
+.\scripts\Update-DotEnvToolsHelp.ps1 -ModuleRoot . -Force
+```
+
+Do not maintain generated MAML by hand.
 
 ## License
 

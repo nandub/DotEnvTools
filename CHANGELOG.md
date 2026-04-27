@@ -12,6 +12,20 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [0.8.11] - 2026-04-27
+
+Internal version commit: pending.
+
+### Added
+
+- Added PlatyPS-generated command Markdown under `docs/reference`.
+- Added generated external help at `Source/en-US/DotEnvTools-help.xml` so packaged modules can serve command help through `Get-Help`.
+- Added `scripts/Update-DotEnvToolsHelp.ps1` to regenerate Markdown and MAML help.
+
+### Documentation
+
+- Updated help authoring guidance to make Markdown the reviewed source for external help and MAML the generated artifact.
+
 ## [0.8.10] - 2026-04-27
 
 Internal version commit: `796ae0b`.
