@@ -14,7 +14,7 @@ Validates .env file syntax and optional .env.example coverage.
 
 ```
 Test-DotEnvFile [-Path] <String> [[-ExamplePath] <String>] [[-Required] <String[]>] [-RequireNoExtraKeys]
- [-ProgressAction <ActionPreference>] [-WhatIf] [-Confirm] [<CommonParameters>]
+ [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -24,15 +24,10 @@ Parses a .env file in strict mode and optionally verifies that keys from an exam
 
 ### EXAMPLE 1
 ```
-Test-DotEnvFile -Path .\.env -WhatIf
-```
-
-### EXAMPLE 2
-```
 Test-DotEnvFile -Path .\.env -ExamplePath .\.env.example
 ```
 
-### EXAMPLE 3
+### EXAMPLE 2
 ```
 Test-DotEnvFile -Path .\.env -ExamplePath .\.env.example -Required API_URL,DB_NAME -RequireNoExtraKeys
 ```
@@ -110,37 +105,6 @@ Aliases:
 Required: False
 Position: Named
 Default value: False
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -Confirm
-Prompts you for confirmation before running the cmdlet.
-
-```yaml
-Type: SwitchParameter
-Parameter Sets: (All)
-Aliases: cf
-
-Required: False
-Position: Named
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -WhatIf
-Shows what would happen if the cmdlet runs.
-The cmdlet is not run.
-
-```yaml
-Type: SwitchParameter
-Parameter Sets: (All)
-Aliases: wi
-
-Required: False
-Position: Named
-Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

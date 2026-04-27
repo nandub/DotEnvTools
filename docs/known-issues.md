@@ -1,6 +1,6 @@
 # Known Issues
 
-- External MAML help is not generated yet; comment-based help is the source of truth in this pass.
+- External MAML help is generated from recreated Markdown. Inline comment-based help is the source of truth.
 - Auto-load depends on prompt invocation. It does not run while commands are executing.
 - Variable expansion is opt-in through `Import-DotEnvFile -ExpandVariables`; implicit expansion remains unsupported.
 - Command substitution and encryption are intentionally unsupported.

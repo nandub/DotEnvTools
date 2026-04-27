@@ -248,7 +248,7 @@ System.String
 .NOTES
 Windows PowerShell 5.1 compatible.
 #>
-    [CmdletBinding(SupportsShouldProcess = $true)]
+    [CmdletBinding()]
     [OutputType([string])]
     param(
         [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
@@ -272,10 +272,7 @@ Windows PowerShell 5.1 compatible.
             $resolvedPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
 
             if (Test-Path -LiteralPath $resolvedPath -PathType Leaf) {
-                if ($PSCmdlet.ShouldProcess($resolvedPath, 'Return .env file path')) {
-                    $resolvedPath
-                }
-
+                $resolvedPath
                 return
             }
 
@@ -319,9 +316,7 @@ Windows PowerShell 5.1 compatible.
                     $candidatePath = Join-Path $root $candidateName
 
                     if (Test-Path -LiteralPath $candidatePath -PathType Leaf) {
-                        if ($PSCmdlet.ShouldProcess($candidatePath, 'Return .env file path')) {
-                            $candidatePath
-                        }
+                        $candidatePath
                     }
                 }
             }
@@ -1761,8 +1756,6 @@ Specific variable names expected in the dotenv file.
 .PARAMETER RequireNoExtraKeys
 Warns when the dotenv file contains keys that are not present in the example file.
 .EXAMPLE
-Test-DotEnvFile -Path .\.env -WhatIf
-.EXAMPLE
 Test-DotEnvFile -Path .\.env -ExamplePath .\.env.example
 .EXAMPLE
 Test-DotEnvFile -Path .\.env -ExamplePath .\.env.example -Required API_URL,DB_NAME -RequireNoExtraKeys
@@ -1773,7 +1766,7 @@ System.Management.Automation.PSCustomObject
 .NOTES
 Windows PowerShell 5.1 compatible.
 #>
-    [CmdletBinding(SupportsShouldProcess = $true)]
+    [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
         [Parameter(Mandatory = $true)]
@@ -1796,46 +1789,44 @@ Windows PowerShell 5.1 compatible.
         $keys = @()
 
         try {
-            if ($PSCmdlet.ShouldProcess($Path, 'Validate .env file')) {
-                $strictErrors = $null
-                $records = @(Read-DotEnvFile -Path $Path -Strict -ErrorVariable strictErrors -ErrorAction SilentlyContinue)
-                foreach ($strictError in @($strictErrors)) {
-                    [void]$errors.Add($strictError.Exception.Message)
+            $strictErrors = $null
+            $records = @(Read-DotEnvFile -Path $Path -Strict -ErrorVariable strictErrors -ErrorAction SilentlyContinue)
+            foreach ($strictError in @($strictErrors)) {
+                [void]$errors.Add($strictError.Exception.Message)
+            }
+
+            $keys = @($records | Select-Object -ExpandProperty Name -Unique)
+
+            if ($ExamplePath) {
+                $exampleStrictErrors = $null
+                $exampleRecords = @(Read-DotEnvFile -Path $ExamplePath -Strict -ErrorVariable exampleStrictErrors -ErrorAction SilentlyContinue)
+                foreach ($exampleStrictError in @($exampleStrictErrors)) {
+                    [void]$errors.Add($exampleStrictError.Exception.Message)
                 }
 
-                $keys = @($records | Select-Object -ExpandProperty Name -Unique)
-
-                if ($ExamplePath) {
-                    $exampleStrictErrors = $null
-                    $exampleRecords = @(Read-DotEnvFile -Path $ExamplePath -Strict -ErrorVariable exampleStrictErrors -ErrorAction SilentlyContinue)
-                    foreach ($exampleStrictError in @($exampleStrictErrors)) {
-                        [void]$errors.Add($exampleStrictError.Exception.Message)
-                    }
-
-                    $exampleKeys = @($exampleRecords | Select-Object -ExpandProperty Name -Unique)
-                    foreach ($exampleName in $exampleKeys) {
-                        if ($keys -notcontains $exampleName) {
-                            [void]$warnings.Add("Missing key from example: $exampleName")
-                        }
-                    }
-
-                    if ($RequireNoExtraKeys) {
-                        foreach ($key in $keys) {
-                            if ($exampleKeys -notcontains $key) {
-                                [void]$warnings.Add("Extra key not present in example: $key")
-                            }
-                        }
+                $exampleKeys = @($exampleRecords | Select-Object -ExpandProperty Name -Unique)
+                foreach ($exampleName in $exampleKeys) {
+                    if ($keys -notcontains $exampleName) {
+                        [void]$warnings.Add("Missing key from example: $exampleName")
                     }
                 }
 
-                if ($Required -and @($Required).Count -gt 0) {
-                    foreach ($requiredName in @($Required)) {
-                        if ($requiredName -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') {
-                            [void]$errors.Add("Invalid required key name: $requiredName")
+                if ($RequireNoExtraKeys) {
+                    foreach ($key in $keys) {
+                        if ($exampleKeys -notcontains $key) {
+                            [void]$warnings.Add("Extra key not present in example: $key")
                         }
-                        elseif ($keys -notcontains $requiredName) {
-                            [void]$warnings.Add("Missing required key: $requiredName")
-                        }
+                    }
+                }
+            }
+
+            if ($Required -and @($Required).Count -gt 0) {
+                foreach ($requiredName in @($Required)) {
+                    if ($requiredName -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') {
+                        [void]$errors.Add("Invalid required key name: $requiredName")
+                    }
+                    elseif ($keys -notcontains $requiredName) {
+                        [void]$warnings.Add("Missing required key: $requiredName")
                     }
                 }
             }
@@ -1992,8 +1983,6 @@ Gets DotEnvTools auto-load state.
 Returns current auto-load settings and tracked file information.
 .EXAMPLE
 Get-DotEnvAutoLoadState
-.EXAMPLE
-Get-DotEnvAutoLoadState -WhatIf
 .INPUTS
 None
 .OUTPUTS
@@ -2001,24 +1990,22 @@ System.Management.Automation.PSCustomObject
 .NOTES
 Windows PowerShell 5.1 compatible.
 #>
-    [CmdletBinding(SupportsShouldProcess = $true)]
+    [CmdletBinding()]
     [OutputType([pscustomobject])]
     param()
 
     process {
-        if ($PSCmdlet.ShouldProcess('DotEnvTools state', 'Return auto-load state')) {
-            [pscustomobject]@{
-                AutoLoadEnabled = [bool]$script:DotEnvState.AutoLoadEnabled
-                LastPath = $script:DotEnvState.LastPath
-                TrustedPath = @($script:DotEnvState.TrustedPaths)
-                TrustAll = [bool]$script:DotEnvState.TrustAll
-                RemoveOnExit = [bool]$script:DotEnvState.RemoveOnExit
-                NoClobber = [bool]$script:DotEnvState.NoClobber
-                IncludeVariants = [bool]$script:DotEnvState.IncludeVariants
-                EnvironmentName = $script:DotEnvState.EnvironmentName
-                LastLoadedFiles = @($script:DotEnvState.LastLoadedFiles)
-                TrackedFileCount = @($script:DotEnvState.FileHashes.Keys).Count
-            }
+        [pscustomobject]@{
+            AutoLoadEnabled = [bool]$script:DotEnvState.AutoLoadEnabled
+            LastPath = $script:DotEnvState.LastPath
+            TrustedPath = @($script:DotEnvState.TrustedPaths)
+            TrustAll = [bool]$script:DotEnvState.TrustAll
+            RemoveOnExit = [bool]$script:DotEnvState.RemoveOnExit
+            NoClobber = [bool]$script:DotEnvState.NoClobber
+            IncludeVariants = [bool]$script:DotEnvState.IncludeVariants
+            EnvironmentName = $script:DotEnvState.EnvironmentName
+            LastLoadedFiles = @($script:DotEnvState.LastLoadedFiles)
+            TrackedFileCount = @($script:DotEnvState.FileHashes.Keys).Count
         }
     }
 }

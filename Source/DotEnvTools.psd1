@@ -1,6 +1,6 @@
 ﻿@{
     RootModule = 'DotEnvTools.psm1'
-    ModuleVersion = '0.8.13'
+    ModuleVersion = '0.8.14'
     GUID = '4d69b4ea-9d83-4e24-8d6f-6b74c3a6d052'
     Author = 'DotEnvTools Contributors'
     CompanyName = 'Community'
@@ -38,7 +38,7 @@
             Tags = @('dotenv', 'env', 'PowerShell', 'WindowsPowerShell')
             LicenseUri = 'https://github.com/nandub/DotEnvTools/blob/main/LICENSE'
             ProjectUri = 'https://github.com/nandub/DotEnvTools'
-            ReleaseNotes = '0.8.13 adds a 1.0 readiness checklist and clarifies Gallery publishing guidance.'
+            ReleaseNotes = '0.8.14 tightens the pre-1.0 public API surface for read-only commands.'
         }
     }
 }

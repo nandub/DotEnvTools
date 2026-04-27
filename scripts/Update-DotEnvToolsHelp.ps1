@@ -2,14 +2,15 @@
 .SYNOPSIS
 Generates DotEnvTools Markdown and external MAML help.
 .DESCRIPTION
-Uses PlatyPS to create or update command Markdown help under docs/reference, then
-generates Source/<Locale>/DotEnvTools-help.xml for Get-Help.
+Uses PlatyPS to recreate command Markdown help under docs/reference from inline
+comment-based help, then generates Source/<Locale>/DotEnvTools-help.xml for
+Get-Help.
 .PARAMETER ModuleRoot
 Repository root.
 .PARAMETER Locale
 Help locale folder name.
 .PARAMETER Force
-Overwrites generated external help and initial Markdown output when needed.
+Overwrites generated Markdown and external help.
 .EXAMPLE
 .\scripts\Update-DotEnvToolsHelp.ps1 -ModuleRoot . -Force
 .INPUTS
@@ -81,10 +82,14 @@ process {
         Remove-Module $moduleName -Force -ErrorAction SilentlyContinue
         Import-Module $manifestPath -Force -ErrorAction Stop
 
-        if (-not (Test-Path -LiteralPath $markdownRoot -PathType Container)) {
-            if ($PSCmdlet.ShouldProcess($markdownRoot, 'Create Markdown help folder')) {
-                New-Item -Path $markdownRoot -ItemType Directory -Force | Out-Null
+        if (Test-Path -LiteralPath $markdownRoot -PathType Container) {
+            if ($PSCmdlet.ShouldProcess($markdownRoot, 'Remove existing Markdown help folder')) {
+                Remove-Item -LiteralPath $markdownRoot -Recurse -Force
             }
+        }
+
+        if ($PSCmdlet.ShouldProcess($markdownRoot, 'Create Markdown help folder')) {
+            New-Item -Path $markdownRoot -ItemType Directory -Force | Out-Null
         }
 
         if (-not (Test-Path -LiteralPath $externalHelpRoot -PathType Container)) {
@@ -93,26 +98,13 @@ process {
             }
         }
 
-        $existingMarkdown = @(Get-ChildItem -Path $markdownRoot -Filter '*.md' -File -ErrorAction SilentlyContinue)
-        if ($existingMarkdown.Count -eq 0) {
-            if ($PSCmdlet.ShouldProcess($markdownRoot, 'Create Markdown help from module')) {
-                New-MarkdownHelp `
-                    -Module $moduleName `
-                    -OutputFolder $markdownRoot `
-                    -AlphabeticParamsOrder `
-                    -Force:$Force `
-                    -ErrorAction Stop | Out-Null
-            }
-        }
-        else {
-            if ($PSCmdlet.ShouldProcess($markdownRoot, 'Update Markdown help from module')) {
-                Update-MarkdownHelpModule `
-                    -Path $markdownRoot `
-                    -AlphabeticParamsOrder `
-                    -UpdateInputOutput `
-                    -Force:$Force `
-                    -ErrorAction Stop | Out-Null
-            }
+        if ($PSCmdlet.ShouldProcess($markdownRoot, 'Recreate Markdown help from module')) {
+            New-MarkdownHelp `
+                -Module $moduleName `
+                -OutputFolder $markdownRoot `
+                -AlphabeticParamsOrder `
+                -Force:$Force `
+                -ErrorAction Stop | Out-Null
         }
 
         if ($PSCmdlet.ShouldProcess($externalHelpRoot, 'Generate external MAML help')) {

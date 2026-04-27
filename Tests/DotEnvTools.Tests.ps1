@@ -298,6 +298,23 @@ API_URL=https://second.example
         @($result.MissingPatterns).Count | Should -Be 0
     }
 
+    It 'Does not expose WhatIf on read-only commands' {
+        $readOnlyCommands = @(
+            'Get-DotEnvAutoLoadState'
+            'Get-DotEnvConfiguration'
+            'Get-DotEnvFilePath'
+            'Get-DotEnvValue'
+            'Read-DotEnvFile'
+            'Test-DotEnvFile'
+            'Test-DotEnvGitIgnore'
+        )
+
+        foreach ($commandName in $readOnlyCommands) {
+            (Get-Command -Name $commandName -Module DotEnvTools).Parameters.ContainsKey('WhatIf') |
+                Should -BeFalse -Because "$commandName does not mutate state"
+        }
+    }
+
     It 'Reloads unchanged dotenv file when tracked variables are missing' {
         Push-Location $script:TestRoot
 

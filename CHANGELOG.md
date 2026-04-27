@@ -12,6 +12,16 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [0.8.14] - 2026-04-27
+
+Internal version commit: pending.
+
+### Changed
+
+- Removed `-WhatIf` from read-only commands that do not mutate state: `Get-DotEnvFilePath`, `Get-DotEnvAutoLoadState`, and `Test-DotEnvFile`.
+- Added regression coverage so read-only commands do not accidentally expose `-WhatIf`.
+- Updated help generation to recreate Markdown from inline comment-based help by default, then regenerate external help.
+
 ## [0.8.13] - 2026-04-27
 
 Internal version commit: `136eade`.

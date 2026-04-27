@@ -23,7 +23,7 @@ DotEnvTools uses manual releases while the project is pre-1.0.
 4. Build the package:
 
 ```powershell
-.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.13 -Verbose
+.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.14 -Verbose
 ```
 
 5. Commit the implementation.
