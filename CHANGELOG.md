@@ -12,6 +12,15 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [0.8.15] - 2026-04-27
+
+Internal version commit: pending.
+
+### Added
+
+- Added `Initialize-DotEnvProject -Template WebApp` for richer starter `.env.example`, `.env`, and layered dotenv files.
+- Added test coverage for generated web app placeholders and local override files.
+
 ## [0.8.14] - 2026-04-27
 
 Internal version commit: `fd15d6e`.

@@ -2357,6 +2357,18 @@
           <dev:defaultValue>@('API_URL', 'DB_NAME')</dev:defaultValue>
         </command:parameter>
         <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="False" position="3" aliases="none">
+          <maml:name>Template</maml:name>
+          <maml:description>
+            <maml:para>Starter template to use. Basic uses -Name values. WebApp creates common web application placeholders.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true" variableLength="false">String</command:parameterValue>
+          <dev:type>
+            <maml:name>String</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>Basic</dev:defaultValue>
+        </command:parameter>
+        <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="False" position="4" aliases="none">
           <maml:name>EnvironmentName</maml:name>
           <maml:description>
             <maml:para>Optional environment suffix used for generated layer names.</maml:para>
@@ -2438,7 +2450,7 @@
       </command:syntaxItem>
     </command:syntax>
     <command:parameters>
-      <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="False" position="3" aliases="none">
+      <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="False" position="4" aliases="none">
         <maml:name>EnvironmentName</maml:name>
         <maml:description>
           <maml:para>Optional environment suffix used for generated layer names.</maml:para>
@@ -2522,6 +2534,18 @@
         </dev:type>
         <dev:defaultValue>None</dev:defaultValue>
       </command:parameter>
+      <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="False" position="3" aliases="none">
+        <maml:name>Template</maml:name>
+        <maml:description>
+          <maml:para>Starter template to use. Basic uses -Name values. WebApp creates common web application placeholders.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true" variableLength="false">String</command:parameterValue>
+        <dev:type>
+          <maml:name>String</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>Basic</dev:defaultValue>
+      </command:parameter>
       <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="False" position="named" aliases="cf">
         <maml:name>Confirm</maml:name>
         <maml:description>
@@ -2573,6 +2597,13 @@
       </command:example>
       <command:example>
         <maml:title>-------------------------- EXAMPLE 2 --------------------------</maml:title>
+        <dev:code>Initialize-DotEnvProject -Path . -Template WebApp -IncludeVariants</dev:code>
+        <dev:remarks>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+      <command:example>
+        <maml:title>-------------------------- EXAMPLE 3 --------------------------</maml:title>
         <dev:code>Initialize-DotEnvProject -Path . -Name API_URL,DB_NAME -IncludeVariants -EnvironmentName development</dev:code>
         <dev:remarks>
           <maml:para></maml:para>

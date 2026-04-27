@@ -1082,6 +1082,9 @@ directory. Existing files are preserved unless -Force is used.
 Target project directory.
 .PARAMETER Name
 Variable names to include in generated files.
+.PARAMETER Template
+Starter template to use. Basic uses -Name values. WebApp creates common web
+application placeholders.
 .PARAMETER EnvironmentName
 Optional environment suffix used for generated layer names.
 .PARAMETER IncludeVariants
@@ -1092,6 +1095,8 @@ Creates only `.env.example`.
 Overwrites existing target files.
 .EXAMPLE
 Initialize-DotEnvProject -Path . -Name API_URL,DB_NAME
+.EXAMPLE
+Initialize-DotEnvProject -Path . -Template WebApp -IncludeVariants
 .EXAMPLE
 Initialize-DotEnvProject -Path . -Name API_URL,DB_NAME -IncludeVariants -EnvironmentName development
 .NOTES
@@ -1107,6 +1112,10 @@ Windows PowerShell 5.1 compatible.
         [Parameter(Mandatory = $false)]
         [ValidatePattern('^[A-Za-z_][A-Za-z0-9_]*$')]
         [string[]]$Name = @('API_URL', 'DB_NAME'),
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet('Basic', 'WebApp')]
+        [string]$Template = 'Basic',
 
         [Parameter(Mandatory = $false)]
         [string]$EnvironmentName = 'development',
@@ -1134,6 +1143,106 @@ Windows PowerShell 5.1 compatible.
             $uniqueNames = @($Name | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
             if (@($uniqueNames).Count -eq 0) {
                 $uniqueNames = @('API_URL', 'DB_NAME')
+            }
+
+            $exampleLines = New-Object System.Collections.ArrayList
+            $projectLines = New-Object System.Collections.ArrayList
+            $localOverrideLines = New-Object System.Collections.ArrayList
+            $environmentLines = New-Object System.Collections.ArrayList
+
+            if ($Template -eq 'WebApp') {
+                foreach ($line in @(
+                    '# Commit this template with safe placeholder values.'
+                    ''
+                    '# --- APP CONFIGURATION ---'
+                    'APP_NAME=MyApp'
+                    'APP_ENV=development'
+                    'NODE_ENV=development'
+                    'PORT=3000'
+                    'APP_URL=http://localhost:3000'
+                    'CORS_ORIGIN=http://localhost:3000'
+                    ''
+                    '# --- DATABASE ---'
+                    '# Choose DATABASE_URL or individual DB_* variables for your application.'
+                    'DATABASE_URL=postgresql://app_user:change_me@localhost:5432/app_db'
+                    'DB_HOST=localhost'
+                    'DB_PORT=5432'
+                    'DB_NAME=app_db'
+                    'DB_USER=app_user'
+                    'DB_PASS='
+                    ''
+                    '# --- AUTHENTICATION ---'
+                    '# Generate secrets with a secure random generator before using outside local development.'
+                    'JWT_SECRET=change_me'
+                    'SESSION_SECRET=change_me'
+                    ''
+                    '# --- CACHE / QUEUE ---'
+                    'REDIS_URL=redis://localhost:6379'
+                    ''
+                    '# --- THIRD-PARTY SERVICES ---'
+                    'STRIPE_API_KEY='
+                    'MAIL_HOST=smtp.example.test'
+                    'MAIL_PORT=2525'
+                    'MAIL_USER='
+                    'MAIL_PASS='
+                    'MAIL_FROM=no-reply@example.test'
+                    'SENTRY_DSN='
+                    ''
+                    '# --- FEATURE FLAGS & LOGGING ---'
+                    'ENABLE_NEW_DASHBOARD=false'
+                    'RATE_LIMIT_ENABLED=true'
+                    'LOG_LEVEL=debug'
+                    'CACHE_TTL_SECONDS=300'
+                )) {
+                    [void]$exampleLines.Add($line)
+                }
+
+                foreach ($line in @(
+                    '# Project defaults. Do not commit real secrets.'
+                    'APP_NAME=MyApp'
+                    'APP_ENV=development'
+                    'NODE_ENV=development'
+                    'PORT=3000'
+                    'APP_URL=http://localhost:3000'
+                    'LOG_LEVEL=debug'
+                    'ENABLE_NEW_DASHBOARD=false'
+                    'RATE_LIMIT_ENABLED=true'
+                )) {
+                    [void]$projectLines.Add($line)
+                }
+
+                foreach ($line in @(
+                    '# Local machine overrides. Do not commit real secrets.'
+                    '# DATABASE_URL=postgresql://app_user:change_me@localhost:5432/app_db'
+                    '# JWT_SECRET=change_me'
+                    '# SESSION_SECRET=change_me'
+                    '# STRIPE_API_KEY='
+                    '# SENTRY_DSN='
+                )) {
+                    [void]$localOverrideLines.Add($line)
+                }
+
+                foreach ($line in @(
+                    ("# {0} environment values." -f $EnvironmentName)
+                    'APP_ENV=development'
+                    'NODE_ENV=development'
+                    'LOG_LEVEL=debug'
+                )) {
+                    [void]$environmentLines.Add($line)
+                }
+            }
+            else {
+                [void]$exampleLines.Add('# Commit this template with safe placeholder values.')
+                [void]$projectLines.Add('# Project defaults. Do not commit real secrets.')
+                [void]$localOverrideLines.Add('# Local machine overrides. Do not commit real secrets.')
+                [void]$environmentLines.Add(("# {0} environment values." -f $EnvironmentName))
+
+                foreach ($variableName in $uniqueNames) {
+                    [void]$exampleLines.Add(('{0}=' -f $variableName))
+                    [void]$projectLines.Add(('{0}=' -f $variableName))
+                    [void]$localOverrideLines.Add(('# {0}=' -f $variableName))
+                    [void]$environmentLines.Add(('{0}=' -f $variableName))
+                }
             }
 
             $files = New-Object System.Collections.ArrayList
@@ -1164,28 +1273,16 @@ Windows PowerShell 5.1 compatible.
                 [void]$lines.Add(("# {0}" -f $fileName))
 
                 if ($fileName -eq '.env.example') {
-                    [void]$lines.Add('# Commit this template with safe placeholder values.')
-                    foreach ($variableName in $uniqueNames) {
-                        [void]$lines.Add(('{0}=' -f $variableName))
-                    }
+                    [void]$lines.AddRange($exampleLines)
                 }
                 elseif ($fileName -like '*.local') {
-                    [void]$lines.Add('# Local machine overrides. Do not commit real secrets.')
-                    foreach ($variableName in $uniqueNames) {
-                        [void]$lines.Add(('# {0}=' -f $variableName))
-                    }
+                    [void]$lines.AddRange($localOverrideLines)
                 }
                 elseif ($fileName -ne '.env') {
-                    [void]$lines.Add(("# {0} environment values." -f $EnvironmentName))
-                    foreach ($variableName in $uniqueNames) {
-                        [void]$lines.Add(('{0}=' -f $variableName))
-                    }
+                    [void]$lines.AddRange($environmentLines)
                 }
                 else {
-                    [void]$lines.Add('# Project defaults. Do not commit real secrets.')
-                    foreach ($variableName in $uniqueNames) {
-                        [void]$lines.Add(('{0}=' -f $variableName))
-                    }
+                    [void]$lines.AddRange($projectLines)
                 }
 
                 if ($PSCmdlet.ShouldProcess($targetPath, 'Create dotenv file')) {

@@ -13,9 +13,9 @@ Creates starter dotenv files for a project.
 ## SYNTAX
 
 ```
-Initialize-DotEnvProject [[-Path] <String>] [[-Name] <String[]>] [[-EnvironmentName] <String>]
- [-IncludeVariants] [-ExampleOnly] [-Force] [-ProgressAction <ActionPreference>] [-WhatIf] [-Confirm]
- [<CommonParameters>]
+Initialize-DotEnvProject [[-Path] <String>] [[-Name] <String[]>] [[-Template] <String>]
+ [[-EnvironmentName] <String>] [-IncludeVariants] [-ExampleOnly] [-Force] [-ProgressAction <ActionPreference>]
+ [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -32,6 +32,11 @@ Initialize-DotEnvProject -Path . -Name API_URL,DB_NAME
 
 ### EXAMPLE 2
 ```
+Initialize-DotEnvProject -Path . -Template WebApp -IncludeVariants
+```
+
+### EXAMPLE 3
+```
 Initialize-DotEnvProject -Path . -Name API_URL,DB_NAME -IncludeVariants -EnvironmentName development
 ```
 
@@ -46,7 +51,7 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 3
+Position: 4
 Default value: Development
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -138,6 +143,24 @@ Aliases: proga
 Required: False
 Position: Named
 Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -Template
+Starter template to use.
+Basic uses -Name values.
+WebApp creates common web
+application placeholders.
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 3
+Default value: Basic
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

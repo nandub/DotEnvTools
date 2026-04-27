@@ -140,6 +140,14 @@ This creates:
 .env.development.local
 ```
 
+Create a web app starter template:
+
+```powershell
+Initialize-DotEnvProject -Path . -Template WebApp -IncludeVariants
+```
+
+The `WebApp` template includes app configuration, database, authentication, cache, mail, third-party service, feature flag, and logging placeholders. Use it as a starting point and replace secret placeholders before using them outside local development.
+
 Existing files are preserved unless `-Force` is used.
 
 ## Override Behavior
@@ -463,14 +471,14 @@ By default this checks for `.env`, `.env.*`, and `.env.keys`.
 ## Build Deployable Package
 
 ```powershell
-.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.14 -Verbose
+.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.15 -Verbose
 ```
 
 This creates:
 
 ```text
-dist\DotEnvTools\0.8.14\
-dist\DotEnvTools-0.8.14.zip
+dist\DotEnvTools\0.8.15\
+dist\DotEnvTools-0.8.15.zip
 ```
 
 ## GitHub Workflows

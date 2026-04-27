@@ -259,6 +259,25 @@ API_URL=https://second.example
         Test-Path (Join-Path $projectRoot '.env.development.local') | Should -BeTrue
     }
 
+    It 'Creates web app starter dotenv files' {
+        $projectRoot = Join-Path $script:TestRoot 'WebAppProject'
+
+        $files = @(Initialize-DotEnvProject -Path $projectRoot -Template WebApp -IncludeVariants -EnvironmentName development)
+
+        @($files).Count | Should -Be 5
+
+        $examplePath = Join-Path $projectRoot '.env.example'
+        $envPath = Join-Path $projectRoot '.env'
+        $localPath = Join-Path $projectRoot '.env.local'
+
+        Get-DotEnvValue -Path $examplePath -Name APP_NAME | Should -Be 'MyApp'
+        Get-DotEnvValue -Path $examplePath -Name DATABASE_URL | Should -Be 'postgresql://app_user:change_me@localhost:5432/app_db'
+        Get-DotEnvValue -Path $examplePath -Name RATE_LIMIT_ENABLED | Should -Be 'true'
+        Get-DotEnvValue -Path $envPath -Name PORT | Should -Be '3000'
+
+        Get-Content -Path $localPath -Raw | Should -Match '# JWT_SECRET=change_me'
+    }
+
     It 'Runs commands with temporary dotenv variables' {
         $powerShellPath = (Get-Process -Id $PID).Path
         $output = Invoke-DotEnvCommand `
