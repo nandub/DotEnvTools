@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Module version to publish, for example 0.8.5'
+        description: 'Module version to publish to optional GitHub Packages feed, for example 0.8.12'
         required: true
         type: string
 
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   publish:
-    name: Build, test, and publish DotEnvTools
+    name: Build, test, and publish DotEnvTools to optional GitHub Packages feed
     runs-on: ubuntu-latest
 
     env:

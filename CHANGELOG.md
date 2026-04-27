@@ -12,6 +12,16 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [0.8.12] - 2026-04-27
+
+Internal version commit: pending.
+
+### Documentation
+
+- Documented the pre-1.0 release policy in `docs/release-process.md`.
+- Clarified that GitHub Releases are preferred for pre-1.0 ZIP artifacts, PowerShell Gallery is the intended public publishing target, and GitHub Packages remains optional.
+- Kept publishing manual while the project is still pre-1.0.
+
 ## [0.8.11] - 2026-04-27
 
 Internal version commit: `ce01fef`.
