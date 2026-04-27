@@ -708,10 +708,10 @@ Windows PowerShell 5.1 compatible.
     end {}
 }
 
-function Read-DotEnvMap {
+function Get-DotEnvConfiguration {
 <#
 .SYNOPSIS
-Reads dotenv files into a map without modifying the process environment.
+Gets dotenv configuration without modifying the process environment.
 .DESCRIPTION
 Resolves one or more dotenv files and returns a PSCustomObject by default, or an
 ordered hashtable when -AsHashtable is used.
@@ -730,9 +730,9 @@ Expands variable references using values already read, then process variables.
 .PARAMETER AsHashtable
 Returns an ordered hashtable instead of a PSCustomObject.
 .EXAMPLE
-Read-DotEnvMap -Path .\.env
+Get-DotEnvConfiguration -Path .\.env
 .EXAMPLE
-Read-DotEnvMap -Path . -IncludeVariants -EnvironmentName development -AsHashtable
+Get-DotEnvConfiguration -Path . -IncludeVariants -EnvironmentName development -AsHashtable
 .NOTES
 Windows PowerShell 5.1 compatible.
 #>
@@ -796,7 +796,7 @@ Windows PowerShell 5.1 compatible.
             [pscustomobject]$map
         }
         catch {
-            Write-Error -Message ("Failed to read dotenv map from path '{0}'. {1}" -f $Path, $_.Exception.Message) -Category ReadError
+            Write-Error -Message ("Failed to get dotenv configuration from path '{0}'. {1}" -f $Path, $_.Exception.Message) -Category ReadError
         }
     }
 }
@@ -859,7 +859,7 @@ Windows PowerShell 5.1 compatible.
     )
 
     process {
-        $map = Read-DotEnvMap `
+        $map = Get-DotEnvConfiguration `
             -Path $Path `
             -IncludeVariants:$IncludeVariants `
             -EnvironmentName $EnvironmentName `
@@ -1076,7 +1076,7 @@ Windows PowerShell 5.1 compatible.
     }
 }
 
-function New-DotEnvFile {
+function Initialize-DotEnvProject {
 <#
 .SYNOPSIS
 Creates starter dotenv files for a project.
@@ -1096,9 +1096,9 @@ Creates only `.env.example`.
 .PARAMETER Force
 Overwrites existing target files.
 .EXAMPLE
-New-DotEnvFile -Path . -Name API_URL,DB_NAME
+Initialize-DotEnvProject -Path . -Name API_URL,DB_NAME
 .EXAMPLE
-New-DotEnvFile -Path . -Name API_URL,DB_NAME -IncludeVariants -EnvironmentName development
+Initialize-DotEnvProject -Path . -Name API_URL,DB_NAME -IncludeVariants -EnvironmentName development
 .NOTES
 Windows PowerShell 5.1 compatible.
 #>
@@ -1200,7 +1200,7 @@ Windows PowerShell 5.1 compatible.
             }
         }
         catch {
-            Write-Error -Message ("Failed to create dotenv files. {0}" -f $_.Exception.Message) -Category WriteError
+            Write-Error -Message ("Failed to initialize dotenv project. {0}" -f $_.Exception.Message) -Category WriteError
         }
     }
 }
@@ -1532,7 +1532,7 @@ Windows PowerShell 5.1 compatible.
         $loadedNames = New-Object System.Collections.ArrayList
 
         try {
-            $map = Read-DotEnvMap `
+            $map = Get-DotEnvConfiguration `
                 -Path $Path `
                 -IncludeVariants:$IncludeVariants `
                 -EnvironmentName $EnvironmentName `

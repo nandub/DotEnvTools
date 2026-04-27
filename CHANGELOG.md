@@ -12,6 +12,16 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [0.8.10] - 2026-04-27
+
+Internal version commit: pending.
+
+### Changed
+
+- Renamed `New-DotEnvFile` to `Initialize-DotEnvProject` for clearer project bootstrap intent.
+- Renamed `Read-DotEnvMap` to `Get-DotEnvConfiguration` for a more idiomatic read-only configuration API.
+- Updated the manifest, tests, and README to use the final pre-1.0 public command names.
+
 ## [0.8.9] - 2026-04-27
 
 Internal version commit: `81cbbc2`.

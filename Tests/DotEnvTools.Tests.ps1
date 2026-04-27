@@ -218,8 +218,8 @@ API_URL=https://second.example
         $result.QUOTED_VALUE | Should -Be 'hello "world" there'
     }
 
-    It 'Reads dotenv maps and single values without changing the environment' {
-        $result = Read-DotEnvMap -Path $script:EnvPath
+    It 'Reads dotenv configuration and single values without changing the environment' {
+        $result = Get-DotEnvConfiguration -Path $script:EnvPath
         $value = Get-DotEnvValue -Path $script:EnvPath -Name API_URL
 
         $result.API_URL | Should -Be 'https://localhost:8443'
@@ -240,7 +240,7 @@ API_URL=https://second.example
     It 'Creates starter dotenv and example files' {
         $projectRoot = Join-Path $script:TestRoot 'NewProject'
 
-        $files = @(New-DotEnvFile -Path $projectRoot -Name API_URL,DB_NAME)
+        $files = @(Initialize-DotEnvProject -Path $projectRoot -Name API_URL,DB_NAME)
 
         @($files).Count | Should -Be 2
         Test-Path (Join-Path $projectRoot '.env') | Should -BeTrue
@@ -251,7 +251,7 @@ API_URL=https://second.example
     It 'Creates layered starter dotenv files' {
         $projectRoot = Join-Path $script:TestRoot 'LayeredNewProject'
 
-        $files = @(New-DotEnvFile -Path $projectRoot -Name API_URL -IncludeVariants -EnvironmentName development)
+        $files = @(Initialize-DotEnvProject -Path $projectRoot -Name API_URL -IncludeVariants -EnvironmentName development)
 
         @($files).Count | Should -Be 5
         Test-Path (Join-Path $projectRoot '.env.local') | Should -BeTrue

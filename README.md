@@ -57,7 +57,7 @@ Invoke-DotEnvCommand -Path .\.env -Command npm -ArgumentList @('test') -Override
 Read values without changing `Env:`:
 
 ```powershell
-Read-DotEnvMap -Path .\.env
+Get-DotEnvConfiguration -Path .\.env
 Get-DotEnvValue -Path .\.env -Name API_URL
 ```
 
@@ -70,7 +70,7 @@ Test-DotEnvFile -Path .\.env -ExamplePath .\.env.example
 Create starter dotenv files:
 
 ```powershell
-New-DotEnvFile -Path . -Name API_URL,DB_NAME
+Initialize-DotEnvProject -Path . -Name API_URL,DB_NAME
 ```
 
 Auto-load trusted project directories:
@@ -117,13 +117,13 @@ Remove-DotEnvVariable -Path .\.env -Verbose
 Create `.env` and `.env.example`:
 
 ```powershell
-New-DotEnvFile -Path . -Name API_URL,DB_NAME
+Initialize-DotEnvProject -Path . -Name API_URL,DB_NAME
 ```
 
 Create layered starter files:
 
 ```powershell
-New-DotEnvFile `
+Initialize-DotEnvProject `
     -Path . `
     -Name API_URL,DB_NAME `
     -IncludeVariants `
@@ -291,13 +291,13 @@ When `-SearchUp` is used, parent directories are returned before child directori
 Read all values as an object:
 
 ```powershell
-Read-DotEnvMap -Path .\.env
+Get-DotEnvConfiguration -Path .\.env
 ```
 
 Read values as an ordered hashtable:
 
 ```powershell
-Read-DotEnvMap -Path . -IncludeVariants -EnvironmentName development -AsHashtable
+Get-DotEnvConfiguration -Path . -IncludeVariants -EnvironmentName development -AsHashtable
 ```
 
 Read one value:
@@ -463,14 +463,14 @@ By default this checks for `.env`, `.env.*`, and `.env.keys`.
 ## Build Deployable Package
 
 ```powershell
-.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.9 -Verbose
+.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.10 -Verbose
 ```
 
 This creates:
 
 ```text
-dist\DotEnvTools\0.8.9\
-dist\DotEnvTools-0.8.9.zip
+dist\DotEnvTools\0.8.10\
+dist\DotEnvTools-0.8.10.zip
 ```
 
 ## GitHub Workflows
@@ -544,13 +544,13 @@ Enable-DotEnvAutoLoad
 Export-DotEnvFile
 Find-DotEnvFile
 Get-DotEnvAutoLoadState
+Get-DotEnvConfiguration
 Get-DotEnvFilePath
 Get-DotEnvValue
 Import-DotEnvFile
+Initialize-DotEnvProject
 Invoke-DotEnvCommand
 Invoke-DotEnvAutoLoadNow
-New-DotEnvFile
-Read-DotEnvMap
 Read-DotEnvFile
 Remove-DotEnvAutoLoadProfile
 Remove-DotEnvValue

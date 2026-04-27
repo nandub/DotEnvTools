@@ -1,6 +1,6 @@
 ﻿@{
     RootModule = 'DotEnvTools.psm1'
-    ModuleVersion = '0.8.9'
+    ModuleVersion = '0.8.10'
     GUID = '4d69b4ea-9d83-4e24-8d6f-6b74c3a6d052'
     Author = 'DotEnvTools Contributors'
     CompanyName = 'Community'
@@ -15,13 +15,13 @@
         'Export-DotEnvFile',
         'Find-DotEnvFile',
         'Get-DotEnvAutoLoadState',
+        'Get-DotEnvConfiguration',
         'Get-DotEnvFilePath',
         'Get-DotEnvValue',
         'Import-DotEnvFile',
+        'Initialize-DotEnvProject',
         'Invoke-DotEnvCommand',
         'Invoke-DotEnvAutoLoadNow',
-        'New-DotEnvFile',
-        'Read-DotEnvMap',
         'Read-DotEnvFile',
         'Remove-DotEnvAutoLoadProfile',
         'Remove-DotEnvValue',
@@ -38,7 +38,7 @@
             Tags = @('dotenv', 'env', 'PowerShell', 'WindowsPowerShell')
             LicenseUri = 'https://github.com/nandub/DotEnvTools/blob/main/LICENSE'
             ProjectUri = 'https://github.com/nandub/DotEnvTools'
-            ReleaseNotes = '0.8.9 expands GitHub CI coverage across Ubuntu, Windows, and macOS.'
+            ReleaseNotes = '0.8.10 finalizes pre-1.0 public API names for project initialization and configuration reads.'
         }
     }
 }
