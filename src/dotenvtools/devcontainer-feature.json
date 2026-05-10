@@ -44,5 +44,6 @@
   "installsAfter": [
     "ghcr.io/devcontainers/features/powershell"
   ],
-  "postCreateCommand": "/usr/local/share/dotenvtools/devcontainer-post-create.sh '${containerWorkspaceFolder}'"
+  "postCreateCommand": "/usr/local/share/dotenvtools/devcontainer-post-create.sh '${containerWorkspaceFolder}'",
+  "postStartCommand": "/usr/local/share/dotenvtools/devcontainer-post-create.sh '${containerWorkspaceFolder}'"
 }

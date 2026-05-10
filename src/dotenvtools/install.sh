@@ -88,6 +88,11 @@ export template="${TEMPLATE}"
 export environment_name="${ENVIRONMENT_NAME}"
 export include_variants="${INCLUDE_VARIANTS}"
 
+if [ -f "\${workspace}/.env.example" ]; then
+    echo "DotEnvTools project initialization skipped because \${workspace}/.env.example already exists."
+    exit 0
+fi
+
 echo "Initializing DotEnvTools project in \${workspace}..."
 
 pwsh -NoLogo -NoProfile -File - <<'POWERSHELL'
