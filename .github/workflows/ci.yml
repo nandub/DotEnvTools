@@ -224,8 +224,8 @@ jobs:
               ConvertTo-Json -Depth 10 |
               Set-Content -Path (Join-Path $devcontainerRoot 'devcontainer.json') -Encoding UTF8
 
-      - name: Build Dev Container
-        run: devcontainer build --workspace-folder .devcontainer-feature-test
+      - name: Build and start Dev Container
+        run: devcontainer up --workspace-folder .devcontainer-feature-test
 
       - name: Test Dev Container Feature
         run: |
