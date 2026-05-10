@@ -249,19 +249,12 @@ jobs:
               throw "Unexpected DotEnvTools version: actual=$actualVersion expected=$expectedVersion"
             }
 
-            $files = @(Initialize-DotEnvProject -Path . -Template WebApp -IncludeVariants -EnvironmentName development -Force)
-            $fileByName = @{}
-            foreach ($file in $files) {
-              $fileByName[$file.Name] = $file.FullName
-            }
-
             foreach ($fileName in ".env.example", ".env.local", ".env.development", ".env.development.local") {
-              if (-not $fileByName.ContainsKey($fileName)) { throw "$fileName was not returned." }
-              if (-not (Test-Path -LiteralPath $fileByName[$fileName] -PathType Leaf)) { throw "$fileName was not created at $($fileByName[$fileName])." }
+              if (-not (Test-Path -LiteralPath $fileName -PathType Leaf)) { throw "$fileName was not created by the Dev Container Feature post-create command." }
             }
 
-            $appName = Get-DotEnvValue -Path $fileByName[".env.example"] -Name APP_NAME
-            $databaseUrl = Get-DotEnvValue -Path $fileByName[".env.example"] -Name DATABASE_URL
+            $appName = Get-DotEnvValue -Path ".env.example" -Name APP_NAME
+            $databaseUrl = Get-DotEnvValue -Path ".env.example" -Name DATABASE_URL
 
             if ($appName -ne "MyApp") { throw "Unexpected APP_NAME: $appName" }
             if ($databaseUrl -ne "postgresql://app_user:change_me@localhost:5432/app_db") { throw "Unexpected DATABASE_URL: $databaseUrl" }

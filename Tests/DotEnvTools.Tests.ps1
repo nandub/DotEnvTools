@@ -550,11 +550,12 @@ Describe 'DotEnvTools Dev Container Feature metadata' {
         $feature.options.archivePath.default | Should -Be ''
         $feature.options.template.enum | Should -Contain 'Basic'
         $feature.options.template.enum | Should -Contain 'WebApp'
-        $feature.postCreateCommand | Should -Match ([regex]::Escape('DOTENVTOOLS_WORKSPACE=''${containerWorkspaceFolder}'''))
+        $feature.postCreateCommand | Should -Match ([regex]::Escape('/usr/local/share/dotenvtools/devcontainer-post-create.sh ''${containerWorkspaceFolder}'''))
         $installScript | Should -Match ([regex]::Escape(('DOTENVTOOLS_VERSION="${{VERSION:-{0}}}"' -f [string]$manifest.ModuleVersion)))
         $installScript | Should -Match ([regex]::Escape('$ErrorActionPreference = ''Stop'''))
         $installScript | Should -Match ([regex]::Escape('Import-Module \$env:module_path -Force'))
         $installScript | Should -Match ([regex]::Escape('DOTENVTOOLS_WORKSPACE'))
+        $installScript | Should -Match ([regex]::Escape('initializeProject is false'))
         $installScript | Should -Match ([regex]::Escape('Initializing DotEnvTools project in'))
         $installScript | Should -Match ([regex]::Escape('export module_path='))
         $installScript | Should -Match ([regex]::Escape('export workspace='))

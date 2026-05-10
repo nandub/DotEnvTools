@@ -75,10 +75,11 @@ cat > "${FEATURE_ROOT}/devcontainer-post-create.sh" << EOF
 set -euo pipefail
 
 if [ "${INITIALIZE_PROJECT}" != "true" ]; then
+    echo "DotEnvTools project initialization skipped because initializeProject is false."
     exit 0
 fi
 
-export workspace="\${DOTENVTOOLS_WORKSPACE:-\${containerWorkspaceFolder:-\${PWD}}}"
+export workspace="\${1:-\${DOTENVTOOLS_WORKSPACE:-\${containerWorkspaceFolder:-\${PWD}}}}"
 if [ -z "\${workspace}" ] || [ "\${workspace}" = '\${containerWorkspaceFolder}' ]; then
     export workspace="\${PWD}"
 fi
