@@ -188,6 +188,10 @@ function Resolve-DotEnvTargetPath {
         [string]$Path
     )
 
+    if ($Path -in @('.', '.\', './')) {
+        return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+    }
+
     $parentPath = Split-Path -Path $Path -Parent
     $leafName = Split-Path -Path $Path -Leaf
 

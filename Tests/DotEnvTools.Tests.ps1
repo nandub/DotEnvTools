@@ -248,6 +248,26 @@ API_URL=https://second.example
         Get-DotEnvValue -Path (Join-Path $projectRoot '.env.example') -Name API_URL | Should -Be ''
     }
 
+    It 'Creates starter dotenv files in the current directory when Path is dot' {
+        $projectRoot = Join-Path $script:TestRoot 'DotProject'
+        New-Item -Path $projectRoot -ItemType Directory -Force | Out-Null
+
+        Push-Location -LiteralPath $projectRoot
+        try {
+            $files = @(Initialize-DotEnvProject -Path . -Template WebApp -IncludeVariants -EnvironmentName development)
+        }
+        finally {
+            Pop-Location
+        }
+
+        @($files).Count | Should -Be 5
+        Test-Path (Join-Path $projectRoot '.env.example') | Should -BeTrue
+        Test-Path (Join-Path $projectRoot '.env.local') | Should -BeTrue
+        Test-Path (Join-Path $projectRoot '.env.development') | Should -BeTrue
+        Test-Path (Join-Path $projectRoot '.env.development.local') | Should -BeTrue
+        Test-Path (Join-Path $projectRoot 'DotProject') | Should -BeFalse
+    }
+
     It 'Creates layered starter dotenv files' {
         $projectRoot = Join-Path $script:TestRoot 'LayeredNewProject'
 

@@ -249,15 +249,19 @@ jobs:
               throw "Unexpected DotEnvTools version: actual=$actualVersion expected=$expectedVersion"
             }
 
-            Initialize-DotEnvProject -Path . -Template WebApp -IncludeVariants -EnvironmentName development -Force | Out-Null
+            $files = @(Initialize-DotEnvProject -Path . -Template WebApp -IncludeVariants -EnvironmentName development -Force)
+            $fileByName = @{}
+            foreach ($file in $files) {
+              $fileByName[$file.Name] = $file.FullName
+            }
 
-            if (-not (Test-Path -LiteralPath ".env.example" -PathType Leaf)) { throw ".env.example was not created." }
-            if (-not (Test-Path -LiteralPath ".env.local" -PathType Leaf)) { throw ".env.local was not created." }
-            if (-not (Test-Path -LiteralPath ".env.development" -PathType Leaf)) { throw ".env.development was not created." }
-            if (-not (Test-Path -LiteralPath ".env.development.local" -PathType Leaf)) { throw ".env.development.local was not created." }
+            foreach ($fileName in ".env.example", ".env.local", ".env.development", ".env.development.local") {
+              if (-not $fileByName.ContainsKey($fileName)) { throw "$fileName was not returned." }
+              if (-not (Test-Path -LiteralPath $fileByName[$fileName] -PathType Leaf)) { throw "$fileName was not created at $($fileByName[$fileName])." }
+            }
 
-            $appName = Get-DotEnvValue -Path ".env.example" -Name APP_NAME
-            $databaseUrl = Get-DotEnvValue -Path ".env.example" -Name DATABASE_URL
+            $appName = Get-DotEnvValue -Path $fileByName[".env.example"] -Name APP_NAME
+            $databaseUrl = Get-DotEnvValue -Path $fileByName[".env.example"] -Name DATABASE_URL
 
             if ($appName -ne "MyApp") { throw "Unexpected APP_NAME: $appName" }
             if ($databaseUrl -ne "postgresql://app_user:change_me@localhost:5432/app_db") { throw "Unexpected DATABASE_URL: $databaseUrl" }

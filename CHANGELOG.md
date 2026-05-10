@@ -21,6 +21,11 @@ Internal version commit: `75585e3`.
 - Added an experimental Dev Container Feature under `src/dotenvtools`.
 - Added `docs/devcontainer-feature.md` with local usage, future GHCR usage, options, and publishing notes.
 
+### Fixed
+
+- Fixed `Initialize-DotEnvProject -Path .` so it creates files in the current directory instead of a nested folder named after the current directory.
+- Hardened the Dev Container Feature smoke test to validate the files returned by `Initialize-DotEnvProject`.
+
 ## [0.8.15] - 2026-04-27
 
 Internal version commit: `559aa23`.
