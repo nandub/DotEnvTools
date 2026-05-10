@@ -533,5 +533,7 @@ Describe 'DotEnvTools Dev Container Feature metadata' {
         $installScript | Should -Match ([regex]::Escape(('DOTENVTOOLS_VERSION="${{VERSION:-{0}}}"' -f [string]$manifest.ModuleVersion)))
         $installScript | Should -Match ([regex]::Escape('$ErrorActionPreference = ''Stop'''))
         $installScript | Should -Match ([regex]::Escape('Import-Module \$env:module_path -Force'))
+        $installScript | Should -Match ([regex]::Escape('export module_path='))
+        $installScript | Should -Match ([regex]::Escape('export workspace='))
     }
 }

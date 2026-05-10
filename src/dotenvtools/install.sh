@@ -78,11 +78,11 @@ if [ "${INITIALIZE_PROJECT}" != "true" ]; then
     exit 0
 fi
 
-workspace="\${containerWorkspaceFolder:-\${PWD}}"
-module_path="${INSTALL_ROOT}/${DOTENVTOOLS_VERSION}/DotEnvTools.psd1"
-template="${TEMPLATE}"
-environment_name="${ENVIRONMENT_NAME}"
-include_variants="${INCLUDE_VARIANTS}"
+export workspace="\${containerWorkspaceFolder:-\${PWD}}"
+export module_path="${INSTALL_ROOT}/${DOTENVTOOLS_VERSION}/DotEnvTools.psd1"
+export template="${TEMPLATE}"
+export environment_name="${ENVIRONMENT_NAME}"
+export include_variants="${INCLUDE_VARIANTS}"
 
 pwsh -NoLogo -NoProfile -File - <<'POWERSHELL'
 \$ErrorActionPreference = 'Stop'
