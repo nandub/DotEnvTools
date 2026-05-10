@@ -78,11 +78,16 @@ if [ "${INITIALIZE_PROJECT}" != "true" ]; then
     exit 0
 fi
 
-export workspace="\${containerWorkspaceFolder:-\${PWD}}"
+export workspace="\${DOTENVTOOLS_WORKSPACE:-\${containerWorkspaceFolder:-\${PWD}}}"
+if [ -z "\${workspace}" ] || [ "\${workspace}" = '\${containerWorkspaceFolder}' ]; then
+    export workspace="\${PWD}"
+fi
 export module_path="${INSTALL_ROOT}/${DOTENVTOOLS_VERSION}/DotEnvTools.psd1"
 export template="${TEMPLATE}"
 export environment_name="${ENVIRONMENT_NAME}"
 export include_variants="${INCLUDE_VARIANTS}"
+
+echo "Initializing DotEnvTools project in \${workspace}..."
 
 pwsh -NoLogo -NoProfile -File - <<'POWERSHELL'
 \$ErrorActionPreference = 'Stop'

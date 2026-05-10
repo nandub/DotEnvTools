@@ -25,6 +25,7 @@ Internal version commit: `75585e3`.
 
 - Fixed `Initialize-DotEnvProject -Path .` so it creates files in the current directory instead of a nested folder named after the current directory.
 - Hardened the Dev Container Feature smoke test to validate the files returned by `Initialize-DotEnvProject`.
+- Fixed Dev Container Feature project initialization to pass `${containerWorkspaceFolder}` explicitly into the post-create script.
 
 ## [0.8.15] - 2026-04-27
 

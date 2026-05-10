@@ -4,6 +4,8 @@ DotEnvTools includes an experimental Dev Container Feature under `src/dotenvtool
 
 The Feature installs DotEnvTools into the container's PowerShell module path and can optionally create starter dotenv files after the workspace is available.
 
+When `initializeProject` is `true`, the Feature creates starter files in `${containerWorkspaceFolder}` during `postCreateCommand`. Rebuild or recreate the dev container after changing Feature options, because the post-create script is generated during the Feature install step.
+
 ## Local Usage
 
 Use the local Feature from this repository:
@@ -58,6 +60,7 @@ After publishing the Feature to GitHub Container Registry, use the GHCR referenc
 - `install.sh` runs at image build time and installs the module from the GitHub Release ZIP.
 - CI can set `archivePath` to install from a local ZIP copied into the Feature folder before the release exists.
 - Project initialization runs from `postCreateCommand`, because the workspace is reliably available after the container is created.
+- The post-create command passes `${containerWorkspaceFolder}` to the generated script as `DOTENVTOOLS_WORKSPACE`.
 - The Feature expects PowerShell to be installed. Add `ghcr.io/devcontainers/features/powershell:2` before this Feature.
 - The Feature targets Linux dev containers with PowerShell 7.
 
