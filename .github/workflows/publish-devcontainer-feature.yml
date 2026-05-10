@@ -1,0 +1,29 @@
+name: Publish Dev Container Feature
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Publish DotEnvTools Feature
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Publish Feature to GHCR
+        uses: devcontainers/action@v1
+        with:
+          publish-features: 'true'
+          base-path-to-features: './src'
+          oci-registry: 'ghcr.io/${{ github.repository_owner }}'
+          features-namespace: 'features'
+          disable-repo-tagging: 'true'

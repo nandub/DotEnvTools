@@ -12,6 +12,12 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- Added a `Publish Dev Container Feature` workflow to publish the DotEnvTools Feature to GitHub Container Registry.
+
 ## [0.8.17] - 2026-05-10
 
 Internal version commit: `61d5470`.

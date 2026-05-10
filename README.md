@@ -493,6 +493,23 @@ See `docs\release-process.md` for the release policy and `docs\1.0-readiness.md`
 
 DotEnvTools includes an experimental Dev Container Feature under `src\dotenvtools`. It installs the module into Linux dev containers with PowerShell and can optionally initialize starter dotenv files after the workspace is created.
 
+After the Feature is published to GHCR, projects can reference it directly:
+
+```json
+{
+  "features": {
+    "ghcr.io/devcontainers/features/powershell:2": {},
+    "ghcr.io/nandub/features/dotenvtools:1": {
+      "version": "0.8.17",
+      "initializeProject": true,
+      "template": "WebApp",
+      "includeVariants": true,
+      "environmentName": "development"
+    }
+  }
+}
+```
+
 See `docs\devcontainer-feature.md` for usage and publishing notes.
 
 ## Run Quality Checks
