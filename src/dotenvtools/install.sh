@@ -70,6 +70,46 @@ rm -rf "${INSTALL_ROOT:?}/${DOTENVTOOLS_VERSION}"
 mkdir -p "${INSTALL_ROOT}/${DOTENVTOOLS_VERSION}"
 cp -R "${MODULE_SOURCE_DIR}/." "${INSTALL_ROOT}/${DOTENVTOOLS_VERSION}/"
 
+cat > "${FEATURE_ROOT}/initialize-project.ps1" << 'POWERSHELL'
+$ErrorActionPreference = 'Stop'
+
+Import-Module $env:module_path -Force
+
+if (-not (Test-Path -LiteralPath $env:workspace -PathType Container)) {
+    New-Item -Path $env:workspace -ItemType Directory -Force | Out-Null
+}
+
+$params = @{
+    Path = $env:workspace
+    Template = $env:template
+    EnvironmentName = $env:environment_name
+}
+if ($env:include_variants -eq 'true') {
+    $params.IncludeVariants = $true
+}
+
+$files = @(Initialize-DotEnvProject @params)
+$expectedFiles = @('.env.example', '.env')
+if ($env:include_variants -eq 'true') {
+    $expectedFiles += '.env.local'
+
+    if (-not [string]::IsNullOrWhiteSpace($env:environment_name)) {
+        $expectedFiles += ".env.$($env:environment_name)"
+        $expectedFiles += ".env.$($env:environment_name).local"
+    }
+}
+
+foreach ($fileName in $expectedFiles) {
+    $filePath = Join-Path -Path $env:workspace -ChildPath $fileName
+    if (-not (Test-Path -LiteralPath $filePath -PathType Leaf)) {
+        $createdFiles = @($files | ForEach-Object { $_.FullName }) -join ', '
+        throw "DotEnvTools did not create expected file '$filePath'. Returned files: $createdFiles"
+    }
+}
+
+Write-Host ("DotEnvTools initialized files: {0}" -f ($expectedFiles -join ', '))
+POWERSHELL
+
 cat > "${FEATURE_ROOT}/devcontainer-post-create.sh" << EOF
 #!/usr/bin/env bash
 set -euo pipefail
@@ -94,20 +134,7 @@ if [ -f "\${workspace}/.env.example" ]; then
 fi
 
 echo "Initializing DotEnvTools project in \${workspace}..."
-
-pwsh -NoLogo -NoProfile -File - <<'POWERSHELL'
-\$ErrorActionPreference = 'Stop'
-Import-Module \$env:module_path -Force
-\$params = @{
-    Path = \$env:workspace
-    Template = \$env:template
-    EnvironmentName = \$env:environment_name
-}
-if (\$env:include_variants -eq 'true') {
-    \$params.IncludeVariants = \$true
-}
-Initialize-DotEnvProject @params
-POWERSHELL
+pwsh -NoLogo -NoProfile -NonInteractive -File "${FEATURE_ROOT}/initialize-project.ps1"
 EOF
 
 chmod +x "${FEATURE_ROOT}/devcontainer-post-create.sh"
