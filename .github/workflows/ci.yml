@@ -135,3 +135,104 @@ jobs:
           }
 
           Write-Host "Imported $env:MODULE_NAME $($module.Version) with $commandCount exported commands on $env:RUNNER_OS."
+
+  devcontainer-feature:
+    name: Build and test Dev Container Feature
+    runs-on: ubuntu-latest
+    needs: test
+
+    env:
+      MODULE_NAME: DotEnvTools
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Resolve module version
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $manifest = Import-PowerShellDataFile -Path "./Source/$env:MODULE_NAME.psd1"
+          $moduleVersion = [string]$manifest.ModuleVersion
+
+          if ([string]::IsNullOrWhiteSpace($moduleVersion)) {
+              Write-Error 'ModuleVersion is empty.'
+          }
+
+          "MODULE_VERSION=$moduleVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Resolved module version: $moduleVersion"
+
+      - name: Validate Feature metadata
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $feature = Get-Content -Path './src/dotenvtools/devcontainer-feature.json' -Raw | ConvertFrom-Json
+
+          if ($feature.id -ne 'dotenvtools') {
+              Write-Error "Unexpected Feature id: $($feature.id)"
+          }
+
+          if ($feature.options.version.default -ne $env:MODULE_VERSION) {
+              Write-Error "Feature default version '$($feature.options.version.default)' does not match module version '$env:MODULE_VERSION'."
+          }
+
+          if (-not (Test-Path -Path './src/dotenvtools/install.sh' -PathType Leaf)) {
+              Write-Error 'Feature install.sh was not found.'
+          }
+
+      - name: Install Dev Container CLI
+        run: npm install -g @devcontainers/cli
+
+      - name: Create Dev Container test fixture
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $fixtureRoot = Join-Path -Path $PWD -ChildPath '.devcontainer-feature-test'
+          $devcontainerRoot = Join-Path -Path $fixtureRoot -ChildPath '.devcontainer'
+
+          New-Item -Path $devcontainerRoot -ItemType Directory -Force | Out-Null
+
+          $config = [ordered]@{
+              image = 'mcr.microsoft.com/devcontainers/base:ubuntu'
+              features = [ordered]@{
+                  'ghcr.io/devcontainers/features/powershell:2' = @{}
+                  '../src/dotenvtools' = [ordered]@{
+                      version = $env:MODULE_VERSION
+                      initializeProject = $true
+                      template = 'WebApp'
+                      includeVariants = $true
+                      environmentName = 'development'
+                  }
+              }
+          }
+
+          $config |
+              ConvertTo-Json -Depth 10 |
+              Set-Content -Path (Join-Path $devcontainerRoot 'devcontainer.json') -Encoding UTF8
+
+      - name: Build Dev Container
+        run: devcontainer build --workspace-folder .devcontainer-feature-test
+
+      - name: Test Dev Container Feature
+        run: |
+          devcontainer exec --workspace-folder .devcontainer-feature-test pwsh -NoLogo -NoProfile -Command '
+            $ErrorActionPreference = "Stop"
+            Import-Module DotEnvTools -Force
+            $module = Get-Module DotEnvTools
+            if ($null -eq $module) { throw "DotEnvTools was not imported." }
+            if ([string]$module.Version -ne $env:MODULE_VERSION) { throw "Unexpected DotEnvTools version: $($module.Version)" }
+
+            if (-not (Test-Path -LiteralPath ".env.example" -PathType Leaf)) { throw ".env.example was not created." }
+            if (-not (Test-Path -LiteralPath ".env.local" -PathType Leaf)) { throw ".env.local was not created." }
+            if (-not (Test-Path -LiteralPath ".env.development" -PathType Leaf)) { throw ".env.development was not created." }
+            if (-not (Test-Path -LiteralPath ".env.development.local" -PathType Leaf)) { throw ".env.development.local was not created." }
+
+            $appName = Get-DotEnvValue -Path ".env.example" -Name APP_NAME
+            $databaseUrl = Get-DotEnvValue -Path ".env.example" -Name DATABASE_URL
+
+            if ($appName -ne "MyApp") { throw "Unexpected APP_NAME: $appName" }
+            if ($databaseUrl -ne "postgresql://app_user:change_me@localhost:5432/app_db") { throw "Unexpected DATABASE_URL: $databaseUrl" }
+          '
