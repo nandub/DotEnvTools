@@ -249,6 +249,8 @@ jobs:
               throw "Unexpected DotEnvTools version: actual=$actualVersion expected=$expectedVersion"
             }
 
+            Initialize-DotEnvProject -Path . -Template WebApp -IncludeVariants -EnvironmentName development -Force | Out-Null
+
             if (-not (Test-Path -LiteralPath ".env.example" -PathType Leaf)) { throw ".env.example was not created." }
             if (-not (Test-Path -LiteralPath ".env.local" -PathType Leaf)) { throw ".env.local was not created." }
             if (-not (Test-Path -LiteralPath ".env.development" -PathType Leaf)) { throw ".env.development was not created." }
