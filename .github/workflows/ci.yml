@@ -192,14 +192,16 @@ jobs:
 
           $fixtureRoot = Join-Path -Path $PWD -ChildPath '.devcontainer-feature-test'
           $devcontainerRoot = Join-Path -Path $fixtureRoot -ChildPath '.devcontainer'
-
+          $fixtureFeatureRoot = Join-Path -Path $devcontainerRoot -ChildPath 'features'
           New-Item -Path $devcontainerRoot -ItemType Directory -Force | Out-Null
+          New-Item -Path $fixtureFeatureRoot -ItemType Directory -Force | Out-Null
+          Copy-Item -Path './src/dotenvtools' -Destination $fixtureFeatureRoot -Recurse -Force
 
           $config = [ordered]@{
               image = 'mcr.microsoft.com/devcontainers/base:ubuntu'
               features = [ordered]@{
                   'ghcr.io/devcontainers/features/powershell:2' = @{}
-                  '../src/dotenvtools' = [ordered]@{
+                  './features/dotenvtools' = [ordered]@{
                       version = $env:MODULE_VERSION
                       initializeProject = $true
                       template = 'WebApp'
