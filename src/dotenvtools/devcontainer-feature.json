@@ -1,0 +1,43 @@
+{
+  "id": "dotenvtools",
+  "version": "0.1.0",
+  "name": "DotEnvTools",
+  "description": "Installs the DotEnvTools PowerShell module and can optionally initialize starter dotenv files after container creation.",
+  "documentationURL": "https://github.com/nandub/DotEnvTools",
+  "licenseURL": "https://github.com/nandub/DotEnvTools/blob/main/LICENSE",
+  "options": {
+    "version": {
+      "type": "string",
+      "default": "0.8.16",
+      "description": "DotEnvTools module version to install from GitHub Releases."
+    },
+    "initializeProject": {
+      "type": "boolean",
+      "default": false,
+      "description": "Create starter dotenv files in the workspace after container creation."
+    },
+    "template": {
+      "type": "string",
+      "enum": [
+        "Basic",
+        "WebApp"
+      ],
+      "default": "Basic",
+      "description": "Starter template used when initializeProject is true."
+    },
+    "includeVariants": {
+      "type": "boolean",
+      "default": false,
+      "description": "Create layered dotenv files when initializeProject is true."
+    },
+    "environmentName": {
+      "type": "string",
+      "default": "development",
+      "description": "Environment suffix used for layered dotenv files."
+    }
+  },
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/powershell"
+  ],
+  "postCreateCommand": "/usr/local/share/dotenvtools/devcontainer-post-create.sh"
+}

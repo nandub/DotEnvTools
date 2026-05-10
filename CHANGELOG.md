@@ -12,6 +12,15 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [0.8.16] - 2026-05-10
+
+Internal version commit: pending.
+
+### Added
+
+- Added an experimental Dev Container Feature under `src/dotenvtools`.
+- Added `docs/devcontainer-feature.md` with local usage, future GHCR usage, options, and publishing notes.
+
 ## [0.8.15] - 2026-04-27
 
 Internal version commit: `559aa23`.

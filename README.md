@@ -471,14 +471,14 @@ By default this checks for `.env`, `.env.*`, and `.env.keys`.
 ## Build Deployable Package
 
 ```powershell
-.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.15 -Verbose
+.\scripts\Build-DotEnvTools.ps1 -NewVersion 0.8.16 -Verbose
 ```
 
 This creates:
 
 ```text
-dist\DotEnvTools\0.8.15\
-dist\DotEnvTools-0.8.15.zip
+dist\DotEnvTools\0.8.16\
+dist\DotEnvTools-0.8.16.zip
 ```
 
 ## GitHub Workflows
@@ -488,6 +488,12 @@ The repository includes a CI workflow that runs on pushes and pull requests to `
 Pre-1.0 ZIP artifacts should be distributed through GitHub Releases when needed. PowerShell Gallery is the intended public publishing target once the module is ready for broader use. GitHub Packages is optional and remains configured as a manual workflow for repository-scoped package-feed testing.
 
 See `docs\release-process.md` for the release policy and `docs\1.0-readiness.md` for the stable-release checklist.
+
+## Dev Container Feature
+
+DotEnvTools includes an experimental Dev Container Feature under `src\dotenvtools`. It installs the module into Linux dev containers with PowerShell and can optionally initialize starter dotenv files after the workspace is created.
+
+See `docs\devcontainer-feature.md` for usage and publishing notes.
 
 ## Run Quality Checks
 
@@ -520,6 +526,7 @@ DotEnvTools\
       DotEnvTools-help.xml
   docs\
     1.0-readiness.md
+    devcontainer-feature.md
     release-process.md
     reference\
       *.md
@@ -529,6 +536,10 @@ DotEnvTools\
     Build-DotEnvTools.ps1
     Test-DotEnvToolsQuality.ps1
     Update-DotEnvToolsHelp.ps1
+  src\
+    dotenvtools\
+      devcontainer-feature.json
+      install.sh
   CHANGELOG.md
   LICENSE
   PSScriptAnalyzerSettings.psd1
@@ -591,7 +602,7 @@ Update `FunctionsToExport` in the manifest when adding or removing public comman
 
 ## Help Authoring
 
-DotEnvTools uses PlatyPS Markdown help in `docs\reference` as the reviewed source for external command help. The generated MAML file is committed at `Source\en-US\DotEnvTools-help.xml` and included in packaged builds.
+DotEnvTools uses comment-based help in `Source\DotEnvTools.psm1` as the source of truth. The help generation script recreates Markdown in `docs\reference`, then generates `Source\en-US\DotEnvTools-help.xml` for packaged builds.
 
 Regenerate help after public command help changes:
 

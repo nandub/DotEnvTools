@@ -1,6 +1,6 @@
 ﻿@{
     RootModule = 'DotEnvTools.psm1'
-    ModuleVersion = '0.8.15'
+    ModuleVersion = '0.8.16'
     GUID = '4d69b4ea-9d83-4e24-8d6f-6b74c3a6d052'
     Author = 'DotEnvTools Contributors'
     CompanyName = 'Community'
@@ -38,7 +38,7 @@
             Tags = @('dotenv', 'env', 'PowerShell', 'WindowsPowerShell')
             LicenseUri = 'https://github.com/nandub/DotEnvTools/blob/main/LICENSE'
             ProjectUri = 'https://github.com/nandub/DotEnvTools'
-            ReleaseNotes = '0.8.15 adds a WebApp starter template for Initialize-DotEnvProject.'
+            ReleaseNotes = '0.8.16 adds an experimental Dev Container Feature for DotEnvTools.'
         }
     }
 }

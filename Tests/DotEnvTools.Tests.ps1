@@ -514,3 +514,21 @@ LITERAL_VALUE=${MISSING_VALUE}
         $env:LITERAL_VALUE | Should -Be '${MISSING_VALUE}'
     }
 }
+
+Describe 'DotEnvTools Dev Container Feature metadata' {
+
+    It 'Uses the current module version as the default Feature install version' {
+        $manifest = Import-PowerShellDataFile -Path (Join-Path $PSScriptRoot '..\Source\DotEnvTools.psd1')
+        $featurePath = Join-Path $PSScriptRoot '..\src\dotenvtools\devcontainer-feature.json'
+        $installPath = Join-Path $PSScriptRoot '..\src\dotenvtools\install.sh'
+
+        $feature = Get-Content -Path $featurePath -Raw | ConvertFrom-Json
+        $installScript = Get-Content -Path $installPath -Raw
+
+        $feature.id | Should -Be 'dotenvtools'
+        $feature.options.version.default | Should -Be ([string]$manifest.ModuleVersion)
+        $feature.options.template.enum | Should -Contain 'Basic'
+        $feature.options.template.enum | Should -Contain 'WebApp'
+        $installScript | Should -Match ([regex]::Escape(('DOTENVTOOLS_VERSION="${{VERSION:-{0}}}"' -f [string]$manifest.ModuleVersion)))
+    }
+}
