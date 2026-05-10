@@ -79,12 +79,24 @@ if [ "${INITIALIZE_PROJECT}" != "true" ]; then
 fi
 
 workspace="\${containerWorkspaceFolder:-\${PWD}}"
+module_path="${INSTALL_ROOT}/${DOTENVTOOLS_VERSION}/DotEnvTools.psd1"
+template="${TEMPLATE}"
+environment_name="${ENVIRONMENT_NAME}"
+include_variants="${INCLUDE_VARIANTS}"
 
-pwsh -NoLogo -NoProfile -Command "\
-Import-Module '${INSTALL_ROOT}/${DOTENVTOOLS_VERSION}/DotEnvTools.psd1' -Force; \
-\$params = @{ Path = '\${workspace}'; Template = '${TEMPLATE}'; EnvironmentName = '${ENVIRONMENT_NAME}' }; \
-if ('${INCLUDE_VARIANTS}' -eq 'true') { \$params.IncludeVariants = \$true }; \
-Initialize-DotEnvProject @params"
+pwsh -NoLogo -NoProfile -File - <<'POWERSHELL'
+$ErrorActionPreference = 'Stop'
+Import-Module $env:module_path -Force
+$params = @{
+    Path = $env:workspace
+    Template = $env:template
+    EnvironmentName = $env:environment_name
+}
+if ($env:include_variants -eq 'true') {
+    $params.IncludeVariants = $true
+}
+Initialize-DotEnvProject @params
+POWERSHELL
 EOF
 
 chmod +x "${FEATURE_ROOT}/devcontainer-post-create.sh"
