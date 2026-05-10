@@ -531,5 +531,7 @@ Describe 'DotEnvTools Dev Container Feature metadata' {
         $feature.options.template.enum | Should -Contain 'Basic'
         $feature.options.template.enum | Should -Contain 'WebApp'
         $installScript | Should -Match ([regex]::Escape(('DOTENVTOOLS_VERSION="${{VERSION:-{0}}}"' -f [string]$manifest.ModuleVersion)))
+        $installScript | Should -Match ([regex]::Escape('$ErrorActionPreference = ''Stop'''))
+        $installScript | Should -Match ([regex]::Escape('Import-Module \$env:module_path -Force'))
     }
 }

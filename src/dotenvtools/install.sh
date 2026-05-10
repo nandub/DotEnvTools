@@ -85,15 +85,15 @@ environment_name="${ENVIRONMENT_NAME}"
 include_variants="${INCLUDE_VARIANTS}"
 
 pwsh -NoLogo -NoProfile -File - <<'POWERSHELL'
-$ErrorActionPreference = 'Stop'
-Import-Module $env:module_path -Force
-$params = @{
-    Path = $env:workspace
-    Template = $env:template
-    EnvironmentName = $env:environment_name
+\$ErrorActionPreference = 'Stop'
+Import-Module \$env:module_path -Force
+\$params = @{
+    Path = \$env:workspace
+    Template = \$env:template
+    EnvironmentName = \$env:environment_name
 }
-if ($env:include_variants -eq 'true') {
-    $params.IncludeVariants = $true
+if (\$env:include_variants -eq 'true') {
+    \$params.IncludeVariants = \$true
 }
 Initialize-DotEnvProject @params
 POWERSHELL
