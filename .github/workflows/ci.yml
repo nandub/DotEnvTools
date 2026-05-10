@@ -205,10 +205,15 @@ jobs:
           Copy-Item -Path './src/dotenvtools' -Destination $fixtureFeatureRoot -Recurse -Force
           Copy-Item -Path "dist/DotEnvTools-$env:MODULE_VERSION.zip" -Destination (Join-Path $fixtureFeatureRoot 'dotenvtools') -Force
 
+          $repoName = if ($env:GITHUB_REPOSITORY) { $env:GITHUB_REPOSITORY -replace '^.*/', '' } else { Split-Path -Path $PWD -Leaf }
+          $containerWorkspace = "/workspaces/$repoName/.devcontainer-feature-test"
+
           $config = [ordered]@{
               image = 'mcr.microsoft.com/devcontainers/base:ubuntu'
+              workspaceFolder = $containerWorkspace
               remoteEnv = [ordered]@{
                   MODULE_VERSION = $env:MODULE_VERSION
+                  DOTENVTOOLS_TEST_WORKSPACE = $containerWorkspace
               }
               features = [ordered]@{
                   'ghcr.io/devcontainers/features/powershell:2' = @{}
@@ -234,6 +239,7 @@ jobs:
         run: |
           devcontainer exec --workspace-folder .devcontainer-feature-test pwsh -NoLogo -NoProfile -Command '
             $ErrorActionPreference = "Stop"
+            Set-Location -LiteralPath $env:DOTENVTOOLS_TEST_WORKSPACE
             Import-Module DotEnvTools -Force
             $module = Get-Module DotEnvTools
             if ($null -eq $module) { throw "DotEnvTools was not imported." }
