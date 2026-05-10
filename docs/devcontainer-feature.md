@@ -16,7 +16,7 @@ Use the local Feature from this repository:
   "features": {
     "ghcr.io/devcontainers/features/powershell:2": {},
     "./src/dotenvtools": {
-      "version": "0.8.16",
+      "version": "0.8.17",
       "initializeProject": true,
       "template": "WebApp",
       "includeVariants": true,
@@ -36,7 +36,7 @@ After publishing the Feature to GitHub Container Registry, use the GHCR referenc
   "features": {
     "ghcr.io/devcontainers/features/powershell:2": {},
     "ghcr.io/nandub/dotenvtools/dotenvtools:1": {
-      "version": "0.8.16",
+      "version": "0.8.17",
       "initializeProject": true,
       "template": "WebApp"
     }
@@ -48,7 +48,7 @@ After publishing the Feature to GitHub Container Registry, use the GHCR referenc
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `version` | string | `0.8.16` | DotEnvTools module version to install from GitHub Releases. |
+| `version` | string | `0.8.17` | DotEnvTools module version to install from GitHub Releases. |
 | `archivePath` | string | empty | Optional local ZIP path inside the Feature folder. Used for CI or local testing before a GitHub Release exists. |
 | `initializeProject` | boolean | `false` | Create starter dotenv files after container creation. |
 | `template` | string | `Basic` | Starter template. Supported values are `Basic` and `WebApp`. |

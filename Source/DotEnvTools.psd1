@@ -1,6 +1,6 @@
 ﻿@{
     RootModule = 'DotEnvTools.psm1'
-    ModuleVersion = '0.8.16'
+    ModuleVersion = '0.8.17'
     GUID = '4d69b4ea-9d83-4e24-8d6f-6b74c3a6d052'
     Author = 'DotEnvTools Contributors'
     CompanyName = 'Community'
@@ -38,7 +38,7 @@
             Tags = @('dotenv', 'env', 'PowerShell', 'WindowsPowerShell')
             LicenseUri = 'https://github.com/nandub/DotEnvTools/blob/main/LICENSE'
             ProjectUri = 'https://github.com/nandub/DotEnvTools'
-            ReleaseNotes = '0.8.16 adds an experimental Dev Container Feature for DotEnvTools.'
+            ReleaseNotes = '0.8.17 fixes Dev Container Feature project initialization and lifecycle smoke coverage.'
         }
     }
 }

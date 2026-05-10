@@ -12,6 +12,18 @@ This project follows a pragmatic versioning approach:
 
 ---
 
+## [0.8.17] - 2026-05-10
+
+Internal version commit: pending.
+
+### Fixed
+
+- Fixed `Initialize-DotEnvProject -Path .` so it creates files in the current directory instead of a nested folder named after the current directory.
+- Fixed Dev Container Feature project initialization to pass `${containerWorkspaceFolder}` explicitly into the lifecycle script.
+- Made Dev Container Feature project initialization idempotent and also run from `postStartCommand` so new workspaces are scaffolded reliably.
+- Changed the Dev Container Feature initializer to run from a generated PowerShell script file and fail if expected dotenv files are not created.
+- Hardened the Dev Container Feature smoke test so CI validates files created by the Feature lifecycle hooks instead of creating them manually in the test step.
+
 ## [0.8.16] - 2026-05-10
 
 Internal version commit: `75585e3`.
@@ -23,10 +35,7 @@ Internal version commit: `75585e3`.
 
 ### Fixed
 
-- Fixed `Initialize-DotEnvProject -Path .` so it creates files in the current directory instead of a nested folder named after the current directory.
-- Hardened the Dev Container Feature smoke test to validate the files returned by `Initialize-DotEnvProject`.
-- Fixed Dev Container Feature project initialization to pass `${containerWorkspaceFolder}` explicitly into the post-create script.
-- Made Dev Container Feature project initialization idempotent and also run from `postStartCommand` so new workspaces are scaffolded reliably.
+- Hardened the initial Dev Container Feature smoke test coverage.
 
 ## [0.8.15] - 2026-04-27
 
