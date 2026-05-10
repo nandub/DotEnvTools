@@ -35,7 +35,7 @@ After publishing the Feature to GitHub Container Registry, use the GHCR referenc
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
   "features": {
     "ghcr.io/devcontainers/features/powershell:2": {},
-    "ghcr.io/nandub/features/dotenvtools:1": {
+    "ghcr.io/nandub/features/dotenvtools:0.1.0": {
       "version": "0.8.17",
       "initializeProject": true,
       "template": "WebApp"
@@ -43,6 +43,8 @@ After publishing the Feature to GitHub Container Registry, use the GHCR referenc
   }
 }
 ```
+
+The `0.1.0` tag is the Dev Container Feature version. The nested `version` option selects the DotEnvTools PowerShell module version installed from GitHub Releases.
 
 The Feature package is published by `.github/workflows/publish-devcontainer-feature.yml`. The package may need to be made public in GitHub package settings before it can be used outside the owner account.
 

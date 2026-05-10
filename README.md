@@ -499,7 +499,7 @@ After the Feature is published to GHCR, projects can reference it directly:
 {
   "features": {
     "ghcr.io/devcontainers/features/powershell:2": {},
-    "ghcr.io/nandub/features/dotenvtools:1": {
+    "ghcr.io/nandub/features/dotenvtools:0.1.0": {
       "version": "0.8.17",
       "initializeProject": true,
       "template": "WebApp",
@@ -509,6 +509,8 @@ After the Feature is published to GHCR, projects can reference it directly:
   }
 }
 ```
+
+In this reference, `0.1.0` is the Dev Container Feature version and the nested `version` option is the DotEnvTools module version.
 
 See `docs\devcontainer-feature.md` for usage and publishing notes.
 
