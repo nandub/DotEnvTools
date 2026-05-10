@@ -14,7 +14,7 @@ This project follows a pragmatic versioning approach:
 
 ## [0.8.17] - 2026-05-10
 
-Internal version commit: pending.
+Internal version commit: `61d5470`.
 
 ### Fixed
 
