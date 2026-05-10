@@ -185,6 +185,13 @@ jobs:
       - name: Install Dev Container CLI
         run: npm install -g @devcontainers/cli
 
+      - name: Build module archive for Feature test
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          ./scripts/Build-DotEnvTools.ps1 -NewVersion $env:MODULE_VERSION -Verbose
+
       - name: Create Dev Container test fixture
         shell: pwsh
         run: |
@@ -196,6 +203,7 @@ jobs:
           New-Item -Path $devcontainerRoot -ItemType Directory -Force | Out-Null
           New-Item -Path $fixtureFeatureRoot -ItemType Directory -Force | Out-Null
           Copy-Item -Path './src/dotenvtools' -Destination $fixtureFeatureRoot -Recurse -Force
+          Copy-Item -Path "dist/DotEnvTools-$env:MODULE_VERSION.zip" -Destination (Join-Path $fixtureFeatureRoot 'dotenvtools') -Force
 
           $config = [ordered]@{
               image = 'mcr.microsoft.com/devcontainers/base:ubuntu'
@@ -203,6 +211,7 @@ jobs:
                   'ghcr.io/devcontainers/features/powershell:2' = @{}
                   './features/dotenvtools' = [ordered]@{
                       version = $env:MODULE_VERSION
+                      archivePath = "DotEnvTools-$env:MODULE_VERSION.zip"
                       initializeProject = $true
                       template = 'WebApp'
                       includeVariants = $true

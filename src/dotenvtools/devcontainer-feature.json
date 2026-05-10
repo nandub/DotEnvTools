@@ -11,6 +11,11 @@
       "default": "0.8.16",
       "description": "DotEnvTools module version to install from GitHub Releases."
     },
+    "archivePath": {
+      "type": "string",
+      "default": "",
+      "description": "Optional local ZIP path inside the Feature folder. Used for CI or local testing before a GitHub Release exists."
+    },
     "initializeProject": {
       "type": "boolean",
       "default": false,

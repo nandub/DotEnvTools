@@ -47,6 +47,7 @@ After publishing the Feature to GitHub Container Registry, use the GHCR referenc
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `version` | string | `0.8.16` | DotEnvTools module version to install from GitHub Releases. |
+| `archivePath` | string | empty | Optional local ZIP path inside the Feature folder. Used for CI or local testing before a GitHub Release exists. |
 | `initializeProject` | boolean | `false` | Create starter dotenv files after container creation. |
 | `template` | string | `Basic` | Starter template. Supported values are `Basic` and `WebApp`. |
 | `includeVariants` | boolean | `false` | Create `.env.local` and environment-specific variant files. |
@@ -55,6 +56,7 @@ After publishing the Feature to GitHub Container Registry, use the GHCR referenc
 ## Design Notes
 
 - `install.sh` runs at image build time and installs the module from the GitHub Release ZIP.
+- CI can set `archivePath` to install from a local ZIP copied into the Feature folder before the release exists.
 - Project initialization runs from `postCreateCommand`, because the workspace is reliably available after the container is created.
 - The Feature expects PowerShell to be installed. Add `ghcr.io/devcontainers/features/powershell:2` before this Feature.
 - The Feature targets Linux dev containers with PowerShell 7.

@@ -527,6 +527,7 @@ Describe 'DotEnvTools Dev Container Feature metadata' {
 
         $feature.id | Should -Be 'dotenvtools'
         $feature.options.version.default | Should -Be ([string]$manifest.ModuleVersion)
+        $feature.options.archivePath.default | Should -Be ''
         $feature.options.template.enum | Should -Contain 'Basic'
         $feature.options.template.enum | Should -Contain 'WebApp'
         $installScript | Should -Match ([regex]::Escape(('DOTENVTOOLS_VERSION="${{VERSION:-{0}}}"' -f [string]$manifest.ModuleVersion)))

@@ -2,6 +2,7 @@
 set -euo pipefail
 
 DOTENVTOOLS_VERSION="${VERSION:-0.8.16}"
+ARCHIVE_PATH_OPTION="${ARCHIVEPATH:-}"
 INITIALIZE_PROJECT="${INITIALIZEPROJECT:-false}"
 TEMPLATE="${TEMPLATE:-Basic}"
 INCLUDE_VARIANTS="${INCLUDEVARIANTS:-false}"
@@ -12,6 +13,7 @@ FEATURE_ROOT="/usr/local/share/dotenvtools"
 ARCHIVE_URL="https://github.com/nandub/DotEnvTools/releases/download/v${DOTENVTOOLS_VERSION}/DotEnvTools-${DOTENVTOOLS_VERSION}.zip"
 ARCHIVE_PATH="/tmp/dotenvtools-${DOTENVTOOLS_VERSION}.zip"
 EXTRACT_ROOT="/tmp/dotenvtools-${DOTENVTOOLS_VERSION}"
+FEATURE_SOURCE_ROOT="$(pwd)"
 
 echo "Installing DotEnvTools ${DOTENVTOOLS_VERSION}..."
 
@@ -38,7 +40,23 @@ fi
 rm -rf "${EXTRACT_ROOT}" "${ARCHIVE_PATH}"
 mkdir -p "${EXTRACT_ROOT}" "${INSTALL_ROOT}" "${FEATURE_ROOT}"
 
-curl -fsSL "${ARCHIVE_URL}" -o "${ARCHIVE_PATH}"
+if [ -n "${ARCHIVE_PATH_OPTION}" ]; then
+    if [[ "${ARCHIVE_PATH_OPTION}" = /* ]]; then
+        LOCAL_ARCHIVE_PATH="${ARCHIVE_PATH_OPTION}"
+    else
+        LOCAL_ARCHIVE_PATH="${FEATURE_SOURCE_ROOT}/${ARCHIVE_PATH_OPTION}"
+    fi
+
+    if [ ! -f "${LOCAL_ARCHIVE_PATH}" ]; then
+        echo "Local DotEnvTools archive not found: ${LOCAL_ARCHIVE_PATH}" >&2
+        exit 1
+    fi
+
+    cp "${LOCAL_ARCHIVE_PATH}" "${ARCHIVE_PATH}"
+else
+    curl -fsSL "${ARCHIVE_URL}" -o "${ARCHIVE_PATH}"
+fi
+
 unzip -q "${ARCHIVE_PATH}" -d "${EXTRACT_ROOT}"
 
 MODULE_SOURCE="$(find "${EXTRACT_ROOT}" -type f -name 'DotEnvTools.psd1' -print -quit)"
