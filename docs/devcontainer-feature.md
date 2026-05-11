@@ -50,6 +50,15 @@ The Feature package is published by `.github/workflows/publish-devcontainer-feat
 
 The published package is smoke-tested by `.github/workflows/test-published-devcontainer-feature.yml`. That workflow consumes `ghcr.io/nandub/features/dotenvtools:0.1.0` directly, so it validates package visibility and the published artifact instead of the local `src/dotenvtools` folder.
 
+## Versioning
+
+The Feature version and module version are intentionally separate:
+
+- `ghcr.io/nandub/features/dotenvtools:0.1.0` pins the Dev Container Feature package.
+- `"version": "0.8.17"` tells that Feature which DotEnvTools module release ZIP to install.
+
+Bump the Feature patch version for install-script, lifecycle, packaging, or test-only changes. Bump the Feature minor version when Feature options or option behavior change. Bump the DotEnvTools module version when module commands or packaged module content change.
+
 ## Options
 
 | Option | Type | Default | Description |

@@ -18,6 +18,7 @@ This project follows a pragmatic versioning approach:
 
 - Added a `Publish Dev Container Feature` workflow to publish the DotEnvTools Feature to GitHub Container Registry.
 - Added a scheduled/manual smoke test for the published GHCR Dev Container Feature package.
+- Documented the versioning policy for the DotEnvTools module and Dev Container Feature package.
 
 ## [0.8.17] - 2026-05-10
 
