@@ -48,6 +48,8 @@ The `0.1.0` tag is the Dev Container Feature version. The nested `version` optio
 
 The Feature package is published by `.github/workflows/publish-devcontainer-feature.yml`. The package may need to be made public in GitHub package settings before it can be used outside the owner account.
 
+The published package is smoke-tested by `.github/workflows/test-published-devcontainer-feature.yml`. That workflow consumes `ghcr.io/nandub/features/dotenvtools:0.1.0` directly, so it validates package visibility and the published artifact instead of the local `src/dotenvtools` folder.
+
 ## Options
 
 | Option | Type | Default | Description |

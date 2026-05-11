@@ -1,0 +1,97 @@
+name: Test Published Dev Container Feature
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '22 8 * * 1'
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  test-published-feature:
+    name: Test published DotEnvTools Feature
+    runs-on: ubuntu-latest
+
+    env:
+      FEATURE_REF: ghcr.io/nandub/features/dotenvtools:0.1.0
+      MODULE_VERSION: 0.8.17
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Dev Container CLI
+        run: npm install -g @devcontainers/cli
+
+      - name: Create published Feature test fixture
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $fixtureRoot = Join-Path -Path $PWD -ChildPath '.published-devcontainer-feature-test'
+          $devcontainerRoot = Join-Path -Path $fixtureRoot -ChildPath '.devcontainer'
+          New-Item -Path $devcontainerRoot -ItemType Directory -Force | Out-Null
+
+          $repoName = if ($env:GITHUB_REPOSITORY) { $env:GITHUB_REPOSITORY -replace '^.*/', '' } else { Split-Path -Path $PWD -Leaf }
+          $containerWorkspace = "/workspaces/$repoName/.published-devcontainer-feature-test"
+          $features = [ordered]@{
+              'ghcr.io/devcontainers/features/powershell:2' = @{}
+          }
+          $features[$env:FEATURE_REF] = [ordered]@{
+              version = $env:MODULE_VERSION
+              initializeProject = $true
+              template = 'WebApp'
+              includeVariants = $true
+              environmentName = 'development'
+          }
+
+          $config = [ordered]@{
+              image = 'mcr.microsoft.com/devcontainers/base:ubuntu'
+              workspaceFolder = $containerWorkspace
+              remoteEnv = [ordered]@{
+                  MODULE_VERSION = $env:MODULE_VERSION
+                  DOTENVTOOLS_TEST_WORKSPACE = $containerWorkspace
+              }
+              features = $features
+          }
+
+          $config |
+              ConvertTo-Json -Depth 10 |
+              Set-Content -Path (Join-Path $devcontainerRoot 'devcontainer.json') -Encoding UTF8
+
+      - name: Build and start Dev Container
+        run: devcontainer up --workspace-folder .published-devcontainer-feature-test
+
+      - name: Test published Dev Container Feature
+        run: |
+          devcontainer exec --workspace-folder .published-devcontainer-feature-test pwsh -NoLogo -NoProfile -Command '
+            $ErrorActionPreference = "Stop"
+            Set-Location -LiteralPath $env:DOTENVTOOLS_TEST_WORKSPACE
+            Import-Module DotEnvTools -Force
+            $module = Get-Module DotEnvTools
+            if ($null -eq $module) { throw "DotEnvTools was not imported." }
+            $actualVersion = $module.Version.ToString()
+            $expectedVersion = [string]$env:MODULE_VERSION
+            if ($actualVersion -ne $expectedVersion) {
+              throw "Unexpected DotEnvTools version: actual=$actualVersion expected=$expectedVersion"
+            }
+
+            foreach ($fileName in ".env.example", ".env.local", ".env.development", ".env.development.local") {
+              if (-not (Test-Path -LiteralPath $fileName -PathType Leaf)) { throw "$fileName was not created by the published Dev Container Feature." }
+            }
+
+            $appName = Get-DotEnvValue -Path ".env.example" -Name APP_NAME
+            $databaseUrl = Get-DotEnvValue -Path ".env.example" -Name DATABASE_URL
+
+            if ($appName -ne "MyApp") { throw "Unexpected APP_NAME: $appName" }
+            if ($databaseUrl -ne "postgresql://app_user:change_me@localhost:5432/app_db") { throw "Unexpected DATABASE_URL: $databaseUrl" }
+          '
